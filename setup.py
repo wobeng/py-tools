@@ -3,8 +3,8 @@ from setuptools import setup
 setup(
     name='py-tools',
     version='1.0.0',
-    packages=['py_base'],
-    url='https://github.com/wobeng/flask-base',
+    packages=['py_tools'],
+    url='https://github.com/wobeng/py-tools',
     license='',
     author='wobeng',
     author_email='wobeng@yblew.com',
