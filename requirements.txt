@@ -1,0 +1,3 @@
+pytz
+simplejson
+git+https://github.com/pynamodb/PynamoDB#egg=pynamodb

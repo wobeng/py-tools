@@ -1,0 +1,37 @@
+import operator
+from functools import reduce
+
+
+class FormatData:
+    def __init__(self, item):
+        self.output = {}
+        self.item = dict(item)
+
+    @staticmethod
+    def get_by_path(item, path_list):
+        return reduce(operator.getitem, path_list, item)
+
+    @staticmethod
+    def set_by_path(item, path_list, value):
+        FormatData.get_by_path(item, path_list[:-1])[path_list[-1]] = value
+
+    @staticmethod
+    def delete_in_dict(item, path_list):
+        del FormatData.get_by_path(item, path_list[:-1])[path_list[-1]]
+
+    def inc(self, keys):
+        for k in keys:
+            try:
+                value = self.get_by_path(self.item, k.split('.'))
+                FormatData.set_by_path(self.output, k.split('.'), value)
+            except KeyError as e:
+                continue
+        return self.output
+
+    def exc(self, keys):
+        for k in keys:
+            try:
+                FormatData.delete_in_dict(self.item, k.split('.'))
+            except KeyError as e:
+                continue
+        return self.item
