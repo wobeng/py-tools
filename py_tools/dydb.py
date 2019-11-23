@@ -60,8 +60,6 @@ class DbModel(Model):
     updated_on = UTCDateTimeAttribute()
 
     def __init__(self, hash_key=None, range_key=None, **attrs):
-        if not hash_key:
-            hash_key = os.environ.get('HASH_KEY', None)
         super(DbModel, self).__init__(hash_key, range_key, **attrs)
         self._hash_key = getattr(self.__class__, self._hash_keyname)
         self._purge = getattr(self.__class__, 'purge', False)
@@ -176,6 +174,13 @@ class DbModel(Model):
         hash_key = hash_key or os.environ.get('HASH_KEY', None)
         cls_obj = cls(hash_key, range_key)
         cls_obj.update(cls.update_attributes(updates, deletes, adds, appends, actions))
+        return cls_obj
+
+    @classmethod
+    def delete_item(cls, hash_key=None, range_key=None):
+        hash_key = hash_key or os.environ.get('HASH_KEY', None)
+        cls_obj = cls(hash_key, range_key)
+        cls_obj.delete()
         return cls_obj
 
     @classmethod
