@@ -4,14 +4,14 @@ s3 = boto3.client('s3')
 
 
 def list_folder(bucket, prefix):
-    resp = s3.client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     return [f['Key'] for f in resp['Contents']] if 'Contents' in resp else []
 
 
-def delete_files(prefix, bucket):
-    keys = list_folder(prefix, bucket)
+def delete_files(bucket, prefix):
+    keys = list_folder(bucket, prefix)
     if keys:
-        s3.client.delete_objects(
+        s3.delete_objects(
             Bucket=bucket,
             Delete=dict(Objects=[dict(Key=f) for f in keys], Quiet=True)
         )
