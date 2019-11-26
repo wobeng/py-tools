@@ -12,6 +12,7 @@ setup(
     install_requires=[
         'pytz',
         'simplejson',
+        'boto3',
         'pynamodb @ git+https://github.com/pynamodb/PynamoDB#egg=pynamodb'
     ]
 )
