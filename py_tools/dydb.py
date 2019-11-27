@@ -135,6 +135,9 @@ class DbModel(Model):
     @classmethod
     def put_item(cls, item, **kwargs):
         cls_obj = cls.save_attributes(item, **kwargs)
+        hash_key_name = cls_obj._hash_key.attr_name
+        if hash_key_name not in item:
+            setattr(cls_obj, hash_key_name, os.environ.get('HASH_KEY', None))
         cls_obj.save()
         return cls_obj
 
