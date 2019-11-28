@@ -69,9 +69,10 @@ class DbModel(Model):
 
     @staticmethod
     def get_first(items):
+        items = [i.dict() for i in items]
         if not items:
-            raise DoesNotExist()
-        return [i.dict() for i in items][0]
+            return
+        return items[0]
 
     @property
     def key(self):
@@ -143,7 +144,8 @@ class DbModel(Model):
         cls_obj = cls.save_attributes(item, **kwargs)
         hash_key_name = cls_obj._hash_key.attr_name
         if hash_key_name not in item:
-            setattr(cls_obj, hash_key_name, os.environ.get('HASH_KEY', None))
+            if 'HASH_KEY' in os.environ:
+                setattr(cls_obj, hash_key_name, os.environ['HASH_KEY'])
         cls_obj.save()
         return cls_obj
 
