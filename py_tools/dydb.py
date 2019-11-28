@@ -67,6 +67,12 @@ class DbModel(Model):
     def dict(self):
         return json.loads(json.dumps(self, cls=ModelEncoder))
 
+    @staticmethod
+    def get_first(items):
+        if not items:
+            raise DoesNotExist()
+        return [i.dict() for i in items][0]
+
     @property
     def key(self):
         key = {self._hash_keyname: getattr(self, self._hash_keyname)}
