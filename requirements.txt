@@ -1,4 +1,5 @@
 pytz
 simplejson
 boto3
+requests
 git+https://github.com/pynamodb/PynamoDB#egg=pynamodb

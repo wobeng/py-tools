@@ -3,6 +3,17 @@ import boto3
 s3 = boto3.client('s3')
 
 
+def get_object_head(bucket, key):
+    try:
+        response = s3.head_object(Bucket=bucket, Key=key)
+        response['Key'] = key
+        response['name'] = response['Key'].split('/')[-1]
+        response['ext'] = response['name'].split('.')[-1]
+        return response
+    except BaseException:
+        pass
+
+
 def list_folder(bucket, prefix):
     resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     return [f['Key'] for f in resp['Contents']] if 'Contents' in resp else []
