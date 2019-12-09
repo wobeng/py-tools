@@ -2,4 +2,5 @@ pytz
 simplejson
 boto3
 requests
+jsonschema==3.0.0a3
 git+https://github.com/pynamodb/PynamoDB#egg=pynamodb

@@ -14,6 +14,7 @@ setup(
         'simplejson',
         'boto3',
         'requests',
+        'jsonschema==3.0.0a3',
         'pynamodb @ git+https://github.com/pynamodb/PynamoDB#egg=pynamodb'
     ]
 )
