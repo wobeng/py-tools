@@ -1,19 +1,19 @@
-from simplejson import dumps
-import boto3
 import traceback
+
+import boto3
+from simplejson import dumps
 
 sqs = boto3.client('sqs')
 sts = boto3.client('sts')
 
+
 class Sns:
-    def __init__(self,group_name=None, region_name=None):
+    def __init__(self, group_name=None):
         self.client = sqs
         self.account_id = sts.get_caller_identity()['Account']
         self.region_name = sqs.meta.region_name
         if group_name:
             self.group_name = group_name
-        if region_name:
-            self.region_name = region_name
 
     def publish(self, subject, message):
         topic_arn = 'arn:aws:sns:{}:{}:{}'.format(self.region_name, self.account_id, self.group_name)
