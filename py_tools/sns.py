@@ -3,15 +3,15 @@ import traceback
 import boto3
 from simplejson import dumps
 
-sqs = boto3.client('sqs')
+sns = boto3.client('sns')
 sts = boto3.client('sts')
 
 
 class Sns:
     def __init__(self, group_name=None):
-        self.client = sqs
+        self.client = sns
         self.account_id = sts.get_caller_identity()['Account']
-        self.region_name = sqs.meta.region_name
+        self.region_name = sns.meta.region_name
         if group_name:
             self.group_name = group_name
 
