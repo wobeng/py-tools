@@ -1,5 +1,5 @@
-from simplejson import dumps
 import boto3
+from simplejson import dumps
 
 sqs = boto3.client('sqs')
 
