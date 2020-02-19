@@ -152,11 +152,13 @@ class DbModel(Model):
     @classmethod
     def update_attributes(cls, updates: Optional[Dict[Any, Any]] = None,
                           deletes: Optional[List[Any]] = None, adds: Optional[Dict[Any, Any]] = None,
-                          appends: Optional[Dict[Any, Any]] = None, actions=None):
+                          appends: Optional[Dict[Any, Any]] = None, prepends: Optional[Dict[Any, Any]] = None,
+                          actions=None):
         updates = updates or {}
         deletes = deletes or []
         adds = adds or {}
         appends = appends or {}
+        prepends = prepends or {}
         actions = actions or []
         for k, v in updates.items():
             actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
@@ -174,6 +176,12 @@ class DbModel(Model):
                 actions.append(attr.set((attr | []).append(v)))
             else:
                 actions.append(k.set((k | []).append(v)))
+        for k, v in prepends.items():
+            if isinstance(k, str):
+                attr = operator.attrgetter(k)(cls)
+                actions.prepend(attr.set((attr | []).prepend(v)))
+            else:
+                actions.prepend(k.set((k | []).prepend(v)))
         actions.append(cls.updated_on.set(datetime.utcnow()))
         return actions
 
@@ -181,10 +189,12 @@ class DbModel(Model):
     def update_item(cls, hash_key=None, range_key=None,
                     updates: Optional[Dict[Any, Any]] = None,
                     deletes: Optional[List[Any]] = None, adds: Optional[Dict[Any, Any]] = None,
-                    appends: Optional[Dict[Any, Any]] = None, actions=None):
+                    appends: Optional[Dict[Any, Any]] = None,
+                    prepends: Optional[Dict[Any, Any]] = None,
+                    actions=None):
         hash_key = hash_key or os.environ.get('HASH_KEY', None)
         cls_obj = cls(hash_key, range_key)
-        cls_obj.update(cls.update_attributes(updates, deletes, adds, appends, actions))
+        cls_obj.update(cls.update_attributes(updates, deletes, adds, appends, prepends, actions))
         return cls_obj
 
     @classmethod
