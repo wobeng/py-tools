@@ -179,9 +179,9 @@ class DbModel(Model):
         for k, v in prepends.items():
             if isinstance(k, str):
                 attr = operator.attrgetter(k)(cls)
-                actions.prepend(attr.set((attr | []).prepend(v)))
+                actions.append(attr.set((attr | []).prepend(v)))
             else:
-                actions.prepend(k.set((k | []).prepend(v)))
+                actions.append(k.set((k | []).prepend(v)))
         actions.append(cls.updated_on.set(datetime.utcnow()))
         return actions
 
