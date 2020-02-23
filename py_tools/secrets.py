@@ -17,4 +17,5 @@ def load_secret(secrets):
 
 
 def load_secret_manager(secret_name):
+    print('Loading secrets...')
     return load_secret(secretsmanager.get_secret_value(SecretId=secret_name)['SecretString'])
