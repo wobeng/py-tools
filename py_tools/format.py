@@ -1,5 +1,26 @@
 import operator
+from datetime import datetime
 from functools import reduce
+
+import simplejson
+
+
+class ModelEncoder(simplejson.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, set):
+            return list(obj)
+        return simplejson.JSONEncoder.default(self, obj)
+
+
+def loads(*args, **kwargs):
+    return simplejson.loads(*args, **kwargs)
+
+
+def dumps(*args, **kwargs):
+    kwargs.setdefault('cls', ModelEncoder)
+    return simplejson.dumps(*args, **kwargs)
 
 
 def clean_empty(d):

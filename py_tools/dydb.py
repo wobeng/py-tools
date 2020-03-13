@@ -1,5 +1,4 @@
 import functools
-import json
 import operator
 import os
 from copy import deepcopy
@@ -13,6 +12,8 @@ from pynamodb.exceptions import DoesNotExist, UpdateError
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
+
+from py_tools.format import ModelEncoder as _ModelEncoder, loads, dumps
 
 _T = TypeVar('_T', bound='Model')
 
@@ -45,13 +46,11 @@ def get_operation_kwargs_from_instance(self,
 Model.get_operation_kwargs_from_instance = get_operation_kwargs_from_instance
 
 
-class ModelEncoder(json.JSONEncoder):
+class ModelEncoder(_ModelEncoder):
     def default(self, obj):
         if hasattr(obj, 'attribute_values'):
             return obj.attribute_values
-        elif isinstance(obj, datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
+        return super(ModelEncoder, self).default(obj)
 
 
 class DbModel(Model):
@@ -65,7 +64,7 @@ class DbModel(Model):
         self._purge = getattr(self.__class__, 'purge', False)
 
     def dict(self):
-        return json.loads(json.dumps(self, cls=ModelEncoder))
+        return loads(dumps(self, cls=ModelEncoder))
 
     @staticmethod
     def get_first(items):
