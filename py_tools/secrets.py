@@ -2,14 +2,14 @@ import os
 
 import boto3
 
-from py_tools.format import loads
+from py_tools import format
 
 secretsmanager = boto3.client('secretsmanager')
 
 
 def load_secret(secrets):
     if isinstance(secrets, str):
-        secrets = loads(secrets)
+        secrets = format.loads(secrets)
     secrets = secrets or {}
     for key, value in secrets.items():
         if key not in os.environ:

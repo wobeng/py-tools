@@ -13,7 +13,7 @@ from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 
-from py_tools.format import ModelEncoder as _ModelEncoder, loads, dumps
+from py_tools import format
 
 _T = TypeVar('_T', bound='Model')
 
@@ -46,7 +46,7 @@ def get_operation_kwargs_from_instance(self,
 Model.get_operation_kwargs_from_instance = get_operation_kwargs_from_instance
 
 
-class ModelEncoder(_ModelEncoder):
+class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
         if hasattr(obj, 'attribute_values'):
             return obj.attribute_values
@@ -64,7 +64,7 @@ class DbModel(Model):
         self._purge = getattr(self.__class__, 'purge', False)
 
     def dict(self):
-        return loads(dumps(self, cls=ModelEncoder))
+        return format.dumps(self, cls=ModelEncoder)
 
     @staticmethod
     def get_first(items):
