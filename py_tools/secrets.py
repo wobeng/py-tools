@@ -1,7 +1,8 @@
 import os
 
 import boto3
-from simplejson import loads
+
+from py_tools.format import loads
 
 secretsmanager = boto3.client('secretsmanager')
 

@@ -1,7 +1,8 @@
 import traceback
 
 import boto3
-from simplejson import dumps
+
+from py_tools.format import dumps
 
 sns = boto3.client('sns')
 sts = boto3.client('sts')
