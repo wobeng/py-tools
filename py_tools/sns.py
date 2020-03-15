@@ -21,6 +21,6 @@ class Sns:
         self.client.publish(TopicArn=topic_arn, Message=message, Subject=subject)
 
     def send_exception_email(self, domain, event):
-        message = format.dumps(event) + '\n\n\n' + traceback.format_exc()
+        message = traceback.format_exc() + '\n\n\n' + format.dumps(event, indent=2)
         subject = 'Error occurred in ' + domain
         self.publish(subject, message)
