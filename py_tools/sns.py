@@ -2,7 +2,7 @@ import traceback
 
 import boto3
 
-from py_tools.format import dumps
+from py_tools import format
 
 sns = boto3.client('sns')
 sts = boto3.client('sts')
@@ -21,6 +21,6 @@ class Sns:
         self.client.publish(TopicArn=topic_arn, Message=message, Subject=subject)
 
     def send_exception_email(self, domain, event):
-        message = dumps(event) + '\n\n\n' + traceback.format_exc()
+        message = format.dumps(event) + '\n\n\n' + traceback.format_exc()
         subject = 'Error occurred in ' + domain
         self.publish(subject, message)

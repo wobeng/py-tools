@@ -1,6 +1,6 @@
 import boto3
 
-from py_tools.format import dumps
+from py_tools import format
 
 sqs = boto3.client('sqs')
 
@@ -39,7 +39,7 @@ class Sqs:
     def send_message(self, message, **kwargs):
         response = self.client.send_message(
             QueueUrl=self.queue_url,
-            MessageBody=dumps(message, use_decimal=True),
+            MessageBody=format.dumps(message, use_decimal=True),
             **kwargs
         )
         return response
