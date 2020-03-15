@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Text, TypeVar, Union, Tuple
 
-from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
+from pynamodb.attributes import UTCDateTimeAttribute
 from pynamodb.connection.util import pythonic
 from pynamodb.constants import KEY, RANGE_KEY
 from pynamodb.exceptions import DoesNotExist, UpdateError
@@ -64,27 +64,7 @@ class DbModel(Model):
         self._purge = getattr(self.__class__, 'purge', False)
 
     def dict(self):
-        ret_dict = {}
-        for name, attr in self.attribute_values.items():
-            ret_dict[name] = self._attr2obj(attr)
-        return ret_dict
-
-    def _attr2obj(self, attr):
-        # compare with list class. It is not ListAttribute.
-        if isinstance(attr, list):
-            _list = []
-            for l in attr:
-                _list.append(self._attr2obj(l))
-            return _list
-        elif isinstance(attr, MapAttribute):
-            _dict = {}
-            for k, v in attr.attribute_values.items():
-                _dict[k] = self._attr2obj(v)
-            return _dict
-        elif isinstance(attr, datetime):
-            return attr.isoformat()
-        else:
-            return attr
+        return format.loads(format.dumps(self, cls=ModelEncoder))
 
     @staticmethod
     def get_first(items):
