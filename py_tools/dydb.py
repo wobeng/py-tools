@@ -2,13 +2,13 @@ import functools
 import operator
 import os
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Text, TypeVar, Union, Tuple
 
 from pynamodb.attributes import UTCDateTimeAttribute
 from pynamodb.connection.util import pythonic
 from pynamodb.constants import KEY, RANGE_KEY
-from pynamodb.exceptions import DoesNotExist, UpdateError
+from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
@@ -61,7 +61,6 @@ class DbModel(Model):
     def __init__(self, hash_key=None, range_key=None, **attrs):
         super(DbModel, self).__init__(hash_key, range_key, **attrs)
         self._hash_key = getattr(self.__class__, self._hash_keyname)
-        self._purge = getattr(self.__class__, 'purge', False)
 
     def dict(self):
         return format.loads(format.dumps(self, cls=ModelEncoder))
@@ -103,8 +102,6 @@ class DbModel(Model):
     def get(cls, hash_key=None, range_key=None, consistent_read=False, attributes_to_get=None):
         hash_key = hash_key or os.environ.get('HASH_KEY', None)
         item = super(DbModel, cls).get(hash_key, range_key, consistent_read, attributes_to_get)
-        if getattr(item, 'purge', False):
-            raise DoesNotExist
         return item
 
     def save(self, condition=None):
@@ -117,16 +114,12 @@ class DbModel(Model):
         self.add_db_conditions(self._hash_key.exists())
         if condition is not None:
             self.add_db_conditions(condition)
-        if self._purge is not False:
-            self.add_db_conditions((self._purge.does_not_exist()) | (self._purge == False))
         return super(DbModel, self).update(actions, DbModel._output_db_condition())
 
     def delete(self, condition=None):
         self.add_db_conditions(self._hash_key.exists())
         if condition is not None:
             self.add_db_conditions(condition)
-        if self._purge is not False:
-            self.add_db_conditions((self._purge.does_not_exist()) | (self._purge == False))
         return super(DbModel, self).delete(DbModel._output_db_condition())
 
     @classmethod
@@ -149,38 +142,52 @@ class DbModel(Model):
         return cls_obj
 
     @classmethod
+    def deletes(cls, attr, value=None):
+        """remove field from item or delete item from set"""
+        if isinstance(attr, str):
+            attr = operator.attrgetter(attr)(cls)
+        return attr.delete(value) if value else attr.remove()
+
+    @classmethod
+    def add(cls, attr, value):
+        """increment or decrement value number or add to set"""
+        if isinstance(attr, str):
+            attr = operator.attrgetter(attr)(cls)
+        return attr.set(attr + value) if isinstance(value, int) else attr.add(value)
+
+    @classmethod
+    def append_or_prepend(cls, attr, value, choice='append'):
+        """append_or_prepend to list"""
+        if isinstance(attr, str):
+            attr = operator.attrgetter(attr)(cls)
+        return attr.set(getattr((attr | []), choice)(value))
+
+    @classmethod
     def update_attributes(cls, updates: Optional[Dict[Any, Any]] = None,
-                          deletes: Optional[List[Any]] = None, adds: Optional[Dict[Any, Any]] = None,
+                          deletes: Optional[Union[List[Any], Dict[Any, Any]]] = None,
+                          adds: Optional[Dict[Any, Any]] = None,
                           appends: Optional[Dict[Any, Any]] = None, prepends: Optional[Dict[Any, Any]] = None,
                           actions=None):
         updates = updates or {}
-        deletes = deletes or []
         adds = adds or {}
         appends = appends or {}
         prepends = prepends or {}
         actions = actions or []
         for k, v in updates.items():
             actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
-        for k in deletes:
-            actions.append(operator.attrgetter(k)(cls).remove()) if isinstance(k, str) else k.remove()
         for k, v in adds.items():
-            if isinstance(k, str):
-                attr = operator.attrgetter(k)(cls)
-                actions.append(attr.set(attr + v))
-            else:
-                actions.append(k.set(k + v))
+            actions.append(cls.add(k, v))
         for k, v in appends.items():
-            if isinstance(k, str):
-                attr = operator.attrgetter(k)(cls)
-                actions.append(attr.set((attr | []).append(v)))
-            else:
-                actions.append(k.set((k | []).append(v)))
+            actions.append(cls.append_or_prepend(k, v))
         for k, v in prepends.items():
-            if isinstance(k, str):
-                attr = operator.attrgetter(k)(cls)
-                actions.append(attr.set((attr | []).prepend(v)))
+            actions.append(cls.append_or_prepend(k, v, 'prepend'))
+        if deletes:
+            if isinstance(deletes, dict):
+                for k, v in deletes.items():
+                    actions.append(cls.deletes(k, v))
             else:
-                actions.append(k.set((k | []).prepend(v)))
+                for k in deletes:
+                    actions.append(cls.deletes(k))
         actions.append(cls.updated_on.set(datetime.utcnow()))
         return actions
 
@@ -204,17 +211,6 @@ class DbModel(Model):
         return cls_obj
 
     @classmethod
-    def purge_item(cls, hash_key=None, range_key=None):
-        try:
-            return cls.update_item(
-                hash_key=hash_key,
-                range_key=range_key,
-                updates={'purge': True, 'expire_on': timedelta(days=1)}
-            )
-        except UpdateError:
-            pass
-
-    @classmethod
     def query(cls,
               hash_key=None,
               range_key_condition=None,
@@ -229,9 +225,6 @@ class DbModel(Model):
               rate_limit=None,
               **filters):
         hash_key = hash_key or os.environ.get('HASH_KEY', None)
-        _purge = getattr(cls, 'purge', False)
-        if _purge:
-            cls.add_db_conditions((_purge.does_not_exist()) | (_purge == False))
         items = super(DbModel, cls).query(
             hash_key=hash_key, range_key_condition=range_key_condition,
             filter_condition=DbModel._output_db_condition(),
@@ -256,32 +249,18 @@ class TransactWrite(_TransactWrite):
 
     def update(self, model, actions, condition=None, return_values=None, **kwargs):
         hash_key = getattr(model.__class__, model._hash_keyname)
-        purge = getattr(model.__class__, 'purge', False)
         overwrite = kwargs.get('overwrite', False)
         if condition is not None:
             condition = condition & (hash_key.exists())
         elif not overwrite:
             condition = hash_key.exists()
-        if purge:
-            purge_cond = purge.does_not_exist() | purge == False
-            if condition is not None:
-                condition = condition & purge_cond
-            else:
-                condition = purge_cond
         return super(TransactWrite, self).update(model, actions, condition, return_values)
 
     def delete(self, model, condition=None, **kwargs):
         hash_key = getattr(model.__class__, model._hash_keyname)
-        purge = getattr(model.__class__, 'purge', False)
         overwrite = kwargs.get('overwrite', False)
         if condition is not None:
             condition = condition & (hash_key.exists())
         elif not overwrite:
             condition = hash_key.exists()
-        if purge:
-            purge_cond = purge.does_not_exist() | purge == False
-            if condition is not None:
-                condition = condition & purge_cond
-            else:
-                condition = purge_cond
         super(TransactWrite, self).delete(model, condition)
