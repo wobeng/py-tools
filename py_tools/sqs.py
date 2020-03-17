@@ -1,5 +1,5 @@
 import boto3
-
+from uuid import uuid4
 from py_tools import format
 
 sqs = boto3.client('sqs')
@@ -49,3 +49,15 @@ class Sqs:
 
     def delete_message_batch(self, entries):
         return self._run_batch(entries, 'delete_message_batch')
+
+    def send_back_unprocessed(self, unprocessed, delay=300):
+        entries = []
+        for record in unprocessed:
+            entry = {
+                'MessageBody': record['body'],
+                'Id': str(uuid4()),
+                'MessageAttributes': {},
+                'DelaySeconds': delay
+            }
+            entries.append(entry)
+        self.send_message_batch(entries)
