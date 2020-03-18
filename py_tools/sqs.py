@@ -1,5 +1,7 @@
-import boto3
 from uuid import uuid4
+
+import boto3
+
 from py_tools import format
 
 sqs = boto3.client('sqs')
