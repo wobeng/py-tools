@@ -23,7 +23,7 @@ class Slack:
         self.client.files_upload(
             channels=self.group_id,
             title=title,
-            initial_comment=initial_comment,
+            initial_comment=initial_comment.replace('<br>', ''),
             content=code,
             filetype=code_type
         )
@@ -34,7 +34,7 @@ class Slack:
                 'type': 'section',
                 'text': {
                     'type': 'mrkdwn',
-                    'text': message
+                    'text': message.replace('<br>', '')
                 }
             },
             {
