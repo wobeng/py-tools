@@ -18,8 +18,9 @@ def loads(*args, **kwargs):
     return simplejson.loads(*args, **kwargs)
 
 
-def dumps(*args, cls=None, **kwargs):
-    return simplejson.dumps(*args, **kwargs, cls=cls or ModelEncoder)
+def dumps(*args, **kwargs):
+    cls = kwargs.get('cls', ModelEncoder)
+    return simplejson.dumps(*args, **kwargs, cls=cls)
 
 
 def clean_empty(d):
