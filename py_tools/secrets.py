@@ -45,7 +45,7 @@ def load_secret_manager(secret_name, names=None, load=True):
         secrets = {k: v for k, v in secrets.items() if k in names}
     if load:
         print('Adding secrets into env...')
-        for key, value in secrets:
+        for key, value in secrets.items():
             if key not in os.environ:
                 os.environ[key] = value
     secrets = {k: replace_value(v) for k, v in secrets.items()}
