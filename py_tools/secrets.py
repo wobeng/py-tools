@@ -40,7 +40,7 @@ def get_parameters(path=None, names=None, load=False):
 
 def load_secret_manager(secret_names, names=None, load=True):
     secrets = {}
-    for secret_name in secret_names:
+    for secret_name in secret_names.split(','):
         secret = secretsmanager.get_secret_value(SecretId=secret_name)['SecretString']
         secret = format.loads(secret)
         secrets.update(secret)
