@@ -38,9 +38,12 @@ def get_parameters(path=None, names=None, load=False):
     return output
 
 
-def load_secret_manager(secret_name, names=None, load=True):
-    secrets = secretsmanager.get_secret_value(SecretId=secret_name)['SecretString']
-    secrets = format.loads(secrets)
+def load_secret_manager(secret_names, names=None, load=True):
+    secrets = {}
+    for secret_name in secret_names:
+        secret = secretsmanager.get_secret_value(SecretId=secret_name)['SecretString']
+        secret = format.loads(secret)
+        secrets.update(secret)
     if names:
         secrets = {k: v for k, v in secrets.items() if k in names}
     if load:
