@@ -6,12 +6,12 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Text, TypeVar, Union, Tuple
 
 from pynamodb.attributes import UTCDateTimeAttribute
-from pynamodb.connection.util import pythonic
 from pynamodb.constants import KEY, RANGE_KEY
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
+from pynamodb.util import snake_to_camel_case
 
 from py_tools import format
 
@@ -38,8 +38,8 @@ def get_operation_kwargs_from_instance(self,
     )
     if not is_update:
         kwargs.update(save_kwargs)
-    elif pythonic(RANGE_KEY) in save_kwargs:
-        kwargs[pythonic(RANGE_KEY)] = save_kwargs[pythonic(RANGE_KEY)]
+    elif snake_to_camel_case(RANGE_KEY) in save_kwargs:
+        kwargs[snake_to_camel_case(RANGE_KEY)] = save_kwargs[snake_to_camel_case(RANGE_KEY)]
     return self._get_connection().get_operation_kwargs(*args, **kwargs)
 
 
