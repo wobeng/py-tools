@@ -28,6 +28,11 @@ class Slack:
             filetype=code_type
         )
 
+    def send_exception_snippet(self, domain, event, code_type='python'):
+        message = traceback.format_exc() + '\n\n\n' + format.dumps(event, indent=2)
+        subject = 'Error occurred in ' + domain
+        self.send_snippet(subject, subject, message, code_type=code_type)
+
     def send_message(self, message, attachment=None):
         blocks = [
             {

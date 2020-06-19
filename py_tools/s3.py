@@ -3,6 +3,12 @@ import boto3
 s3 = boto3.client('s3')
 
 
+def get_object(bucket, key, **kwargs):
+    response = s3.get_object(Bucket=bucket, Key=key, **kwargs)
+    response = response['Body'].read().decode('utf-8')
+    return response
+
+
 def get_object_head(bucket, key):
     try:
         response = s3.head_object(Bucket=bucket, Key=key)
@@ -47,3 +53,20 @@ def generate_url(bucket, key, media_size):
     s3_url['fields']['success_action_status'] = 201
 
     return s3_url
+
+
+def get_json_object(bucket, key, sort=False, **kwargs):
+    response = get_object(bucket, key, **kwargs)
+    response = loads(response)
+    if sort:
+        response = OrderedDict(sorted(response.items(), key=itemgetter(1)))
+    return response
+
+
+def download_object(bucket, key, save_dir, rename=False):
+    filename = key.split('/')[-1]
+    if rename:
+        filename = str(uuid4()) + '.' + filename.split('.')[-1]
+    output = os.path.join(save_dir, filename)
+    s3.download_file(bucket, key, output)
+    return output
