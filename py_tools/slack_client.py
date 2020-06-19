@@ -1,5 +1,8 @@
-import slack
 import traceback
+
+import slack
+
+from py_tools.format import dumps
 
 
 class Slack:
@@ -30,7 +33,7 @@ class Slack:
         )
 
     def send_exception_snippet(self, domain, event, code_type='python'):
-        message = traceback.format_exc() + '\n\n\n' + format.dumps(event, indent=2)
+        message = traceback.format_exc() + '\n\n\n' + dumps(event, indent=2)
         subject = 'Error occurred in ' + domain
         self.send_snippet(subject, subject, message, code_type=code_type)
 
