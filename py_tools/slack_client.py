@@ -9,8 +9,8 @@ class Slack:
     def __init__(self, token, channel):
         self.client = slack.WebClient(token)
         self.group_id = None
-        groups = self.client.groups_list()
-        for gp in groups['groups']:
+        groups = self.client.conversations_list(types='public_channel,private_channel')
+        for gp in groups['channels']:
             if gp['name'] == channel:
                 self.group_id = gp['id']
                 break
