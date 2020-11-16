@@ -111,8 +111,9 @@ class DbModel(Model):
         item = super(DbModel, cls).get(hash_key, range_key, consistent_read, attributes_to_get)
         return item
 
-    def save(self, condition=None):
-        self.add_db_conditions(self._hash_key.does_not_exist())
+    def save(self, condition=None, overwrite=False):
+        if not overwrite:
+            self.add_db_conditions(self._hash_key.does_not_exist())
         if condition is not None:
             self.add_db_conditions(condition)
         return super(DbModel, self).save(DbModel._output_db_condition())
@@ -139,13 +140,13 @@ class DbModel(Model):
         return deepcopy(c)
 
     @classmethod
-    def put_item(cls, item, **kwargs):
+    def put_item(cls, item, overwrite=False, **kwargs):
         cls_obj = cls.save_attributes(item, **kwargs)
         hash_key_name = cls_obj._hash_key.attr_name
         if hash_key_name not in item:
             if 'HASH_KEY' in os.environ:
                 setattr(cls_obj, hash_key_name, os.environ['HASH_KEY'])
-        cls_obj.save()
+        cls_obj.save(overwrite=overwrite)
         return cls_obj
 
     @classmethod
