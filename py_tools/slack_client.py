@@ -1,13 +1,13 @@
 import traceback
 
-import slack
+from slack_sdk import WebClient
 
 from py_tools.format import dumps
 
 
 class Slack:
     def __init__(self, token, channel_name):
-        self.client = slack.WebClient(token)
+        self.client = WebClient(token)
         self.channel_id = None
         channels = self.client.conversations_list(types='public_channel,private_channel')
         for channel in channels['channels']:
@@ -22,21 +22,22 @@ class Slack:
             admins = [u['id'] for u in self.client.users_list()['members'] if u.get('is_admin') or u.get('is_owner')]
             self.client.conversations_invite(channel=self.channel_id, users=admins)
 
-    def send_snippet(self, title, initial_comment, code, code_type='python'):
-        self.client.files_upload(
+    def send_snippet(self, title, initial_comment, code, code_type='python', thread_ts=None):
+        return self.client.files_upload(
             channels=self.channel_id,
             title=title,
             initial_comment=initial_comment.replace('<br>', ''),
             content=code,
-            filetype=code_type
-        )
+            filetype=code_type,
+            thread_ts=thread_ts
+        )['ts']
 
-    def send_exception_snippet(self, domain, event, code_type='python'):
+    def send_exception_snippet(self, domain, event, code_type='python', thread_ts=None):
         message = traceback.format_exc() + '\n\n\n' + dumps(event, indent=2)
         subject = 'Error occurred in ' + domain
-        self.send_snippet(subject, subject, message, code_type=code_type)
+        self.send_snippet(subject, subject, message, code_type=code_type, thread_ts=thread_ts)
 
-    def send_message(self, message, attachment=None):
+    def send_message(self, message, attachment=None, thread_ts=None):
         blocks = [
             {
                 'type': 'section',
@@ -60,7 +61,8 @@ class Slack:
                 'url': attachment['value']
             }
 
-        self.client.chat_postMessage(
+        return self.client.chat_postMessage(
             channel=self.channel_id,
-            blocks=blocks
-        )
+            blocks=blocks,
+            thread_ts=thread_ts
+        )['ts']
