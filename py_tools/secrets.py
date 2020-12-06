@@ -16,14 +16,14 @@ def replace_value(value):
     return value
 
 
-def get_parameters(path=None, names=None, load=False):
+def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     if names:
-        response = ssm.get_parameters(
+        response = ssm_client.get_parameters(
             Names=names,
             WithDecryption=True
         )
     else:
-        response = ssm.get_parameters_by_path(
+        response = ssm_client.get_parameters_by_path(
             Path=path,
             WithDecryption=True
         )
