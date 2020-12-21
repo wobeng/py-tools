@@ -8,9 +8,11 @@ sqs = boto3.client('sqs')
 
 
 class Sqs:
-    def __init__(self, queue_name):
+    def __init__(self, queue_name=None, queue_url=None):
         self.client = sqs
-        self.queue_url = self.client.get_queue_url(QueueName=queue_name)['QueueUrl']
+        self.queue_url = queue_url
+        if queue_name:
+            self.queue_url = self.client.get_queue_url(QueueName=queue_name)['QueueUrl']
 
     def _run_batch(self, entries, function_name):
         n = 10
