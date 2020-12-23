@@ -38,10 +38,10 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     return output
 
 
-def load_secret_manager(secret_names, names=None, load=True):
+def load_secret_manager(secret_names, names=None, load=True, secrets_client=secretsmanager):
     secrets = {}
     for secret_name in secret_names.split(','):
-        secret = secretsmanager.get_secret_value(SecretId=secret_name)['SecretString']
+        secret = secrets_client.get_secret_value(SecretId=secret_name)['SecretString']
         secret = format.loads(secret)
         secrets.update(secret)
     if names:
