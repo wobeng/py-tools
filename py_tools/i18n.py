@@ -7,39 +7,52 @@ import os
 
 class Localization:
     def __init__(self, localedir='locale', default_lang='en', domain='messages'):
+        self.domain = domain
+        self.localedir = localedir
+        self.active_lang = default_lang
+        self.default_lang = default_lang
+        self.locales, self.all_translations = self.load_translations(self.localedir, self.default_lang, self.domain)
 
-        self.localedir = os.path.join(os.getcwd(), 'locale')
-        self.lang = default_lang
+    def __call__(self, localedir=None, default_lang=None, domain=None):
+        localedir = localedir or self.localedir
+        default_lang = default_lang or self.default_lang
+        domain = domain or self.domain
+        self.locales, self.all_translations = self.load_translations(localedir, default_lang, domain)
+
+    @staticmethod
+    def load_translations(localedir, default_lang, domain):
+        locales = []
+        all_translations = {}
 
         # find out all supported locales in locale directory
-        self.locales = []
         for dirpath, dirnames, filenames in os.walk(localedir):
             for dirname in dirnames:
-                self.locales.append(dirname)
+                locales.append(dirname)
             break
 
-        self.AllTranslations = {}
-        for locale in self.locales:
+        for locale in locales:
             try:
-                self.AllTranslations[locale] = gettext.translation(domain, localedir, [locale])
+                all_translations[locale] = gettext.translation(domain, localedir, [locale])
             except FileNotFoundError:
-                self.AllTranslations[locale] = gettext.translation(domain, localedir, [default_lang])
+                all_translations[locale] = gettext.translation(domain, localedir, [default_lang])
+
+        return locales, all_translations
 
     def set_locale(self, lang):
         if lang in self.locales:
-            self.lang = lang
+            self.active_lang = lang
 
     def gettext(self, message):
-        return self.AllTranslations[self.lang].gettext(message)
+        return self.all_translations[self.active_lang].gettext(message)
 
     def ugettext(self, message):
-        return self.AllTranslations[self.lang].gettext(message)
+        return self.all_translations[self.active_lang].gettext(message)
 
     def ngettext(self, singular, plural, n):
-        return self.AllTranslations[self.lang].ngettext(singular, plural, n)
+        return self.all_translations[self.active_lang].ngettext(singular, plural, n)
 
     def ungettext(self, singular, plural, n):
-        return self.AllTranslations[self.lang].ungettext(singular, plural, n)
+        return self.all_translations[self.active_lang].ungettext(singular, plural, n)
 
 
 # init localization and make _ available
