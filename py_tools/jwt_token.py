@@ -2,7 +2,10 @@ import jwt
 
 
 def encode_token(payload, secret=''):
-    return jwt.encode(payload, secret).decode()
+    output = jwt.encode(payload, secret)
+    if isinstance(output, str):
+        return output
+    return output.decode()
 
 
 def decode_token(payload, secret=''):
