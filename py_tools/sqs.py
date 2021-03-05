@@ -63,5 +63,8 @@ class Sqs:
                 'MessageAttributes': {},
                 'DelaySeconds': delay
             }
+            if 'MessageGroupId' in record['attributes']:
+                entry['MessageGroupId'] = record['attributes']['MessageGroupId']
+
             entries.append(entry)
         self.send_message_batch(entries)
