@@ -62,7 +62,7 @@ class Sqs:
                 'Id': str(uuid4())
             }
             if 'messageAttributes' in record:
-                entry['messageAttributes'] = record['messageAttributes']
+                entry['MessageAttributes'] = record['messageAttributes']
             if 'MessageGroupId' in record['attributes']:
                 entry['MessageGroupId'] = record['attributes']['MessageGroupId']
             else:
