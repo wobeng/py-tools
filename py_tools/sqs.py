@@ -59,12 +59,14 @@ class Sqs:
         for record in unprocessed:
             entry = {
                 'MessageBody': record['body'],
-                'Id': str(uuid4()),
-                'MessageAttributes': {},
-                'DelaySeconds': delay
+                'Id': str(uuid4())
             }
+            if 'messageAttributes' in record:
+                entry['messageAttributes'] = record['messageAttributes']
             if 'MessageGroupId' in record['attributes']:
                 entry['MessageGroupId'] = record['attributes']['MessageGroupId']
+            else:
+                entry['DelaySeconds'] = delay
 
             entries.append(entry)
         self.send_message_batch(entries)
