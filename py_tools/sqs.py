@@ -59,8 +59,6 @@ class Sqs:
         message_attrs_keys = {
             'stringValue': 'StringValue',
             'binaryValue': 'BinaryValue',
-            'stringListValues': 'StringListValues',
-            'binaryListValues': 'BinaryListValues',
             'dataType': 'DataType'
 
         }
@@ -75,7 +73,8 @@ class Sqs:
                 for k, v in record['messageAttributes'].items():
                     attr_values = {}
                     for x, y in v.items():
-                        attr_values[message_attrs_keys[x]] = y
+                        if x in message_attrs_keys:
+                            attr_values[message_attrs_keys[x]] = y
                     attrs[k] = attr_values
                 entry['MessageAttributes'] = attrs
             if 'MessageGroupId' in record['attributes']:
