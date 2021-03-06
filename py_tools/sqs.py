@@ -56,13 +56,27 @@ class Sqs:
 
     def send_back_unprocessed(self, unprocessed, delay=300):
         entries = []
+        message_attrs_keys = {
+            'stringValue': 'StringValue',
+            'binaryValue': 'BinaryValue',
+            'stringListValues': 'StringListValues',
+            'binaryListValues': 'BinaryListValues',
+            'dataType': 'DataType'
+
+        }
         for record in unprocessed:
             entry = {
                 'MessageBody': record['body'],
                 'Id': str(uuid4())
             }
             if 'messageAttributes' in record:
-                entry['MessageAttributes'] = record['messageAttributes']
+                attrs = {}
+                for k, v in record['messageAttributes'].items():
+                    attr_values = {}
+                    for x, y in v.items():
+                        attr_values[message_attrs_keys[x]] = y
+                    attrs[k] = attr_values
+                entry['MessageAttributes'] = attrs
             if 'MessageGroupId' in record['attributes']:
                 entry['MessageGroupId'] = record['attributes']['MessageGroupId']
             else:
