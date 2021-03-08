@@ -32,6 +32,12 @@ class Sqs:
                 else:
                     get_out = True
 
+    def purge(self):
+        response = self.client.purge_queue(
+            QueueUrl=self.queue_url
+        )
+        return response
+
     def receive_messages(self, limit=10, **kwargs):
         response = self.client.receive_message(
             QueueUrl=self.queue_url,
