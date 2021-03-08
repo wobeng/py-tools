@@ -38,6 +38,13 @@ class Sqs:
         )
         return response
 
+    def delete_message(self, receipt_handle):
+        response = self.client.delete_message(
+            QueueUrl=self.queue_url,
+            ReceiptHandle=receipt_handle
+        )
+        return response
+
     def receive_messages(self, limit=10, **kwargs):
         response = self.client.receive_message(
             QueueUrl=self.queue_url,
