@@ -3,54 +3,15 @@ import operator
 import os
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Text, TypeVar, Union, Tuple
+from typing import Any, Dict, List, Optional, Union
 
 from pynamodb.attributes import UTCDateTimeAttribute
-from pynamodb.constants import KEY
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 
 from py_tools import format
-
-_T = TypeVar('_T', bound='Model')
-
-KeyType = Union[Text, bytes, float, int, Tuple]
-ModelType = TypeVar('ModelType', bound=Model)
-
-
-def get_operation_kwargs_from_instance(self,
-                                       key=KEY,
-                                       actions=None,
-                                       condition=None,
-                                       return_values_on_condition_failure=None):
-    is_update = actions is not None
-    is_delete = actions is None and key is KEY
-    null_check = not (is_update or is_delete)
-    args, save_kwargs = self._get_save_args(attributes=(not is_delete), null_check=null_check)
-
-    version_condition = self._handle_version_attribute(
-        serialized_attributes={} if is_delete else save_kwargs,
-        actions=actions
-    )
-    if version_condition is not None:
-        condition &= version_condition
-
-    kwargs = dict(
-        key=key,
-        actions=actions,
-        condition=condition,
-        return_values_on_condition_failure=return_values_on_condition_failure
-    )
-    if not is_update:
-        kwargs.update(save_kwargs)
-    elif 'range_key' in save_kwargs:
-        kwargs['range_key'] = save_kwargs['range_key']
-    return self._get_connection().get_operation_kwargs(*args, **kwargs)
-
-
-Model.get_operation_kwargs_from_instance = get_operation_kwargs_from_instance
 
 
 class ModelEncoder(format.ModelEncoder):
@@ -247,28 +208,44 @@ class DbModel(Model):
 class TransactWrite(_TransactWrite):
 
     def save(self, model, condition=None, return_values=None, **kwargs):
-        hash_key = getattr(model.__class__, model._hash_keyname)
+        key_name = model._hash_keyname
         overwrite = kwargs.get('overwrite', False)
+        hash_key = getattr(model.__class__, key_name)
+        if not overwrite:
+            model.add_db_conditions(hash_key.does_not_exist())
         if condition is not None:
-            condition = condition & (hash_key.does_not_exist())
-        elif not overwrite:
-            condition = hash_key.does_not_exist()
+            model.add_db_conditions(condition)
+        condition = model._output_db_condition()
+        # set hash key if missing
+        if not getattr(model, key_name):
+            if 'HASH_KEY' in os.environ:
+                setattr(model, key_name, os.environ['HASH_KEY'])
         return super(TransactWrite, self).save(model, condition, return_values)
 
     def update(self, model, actions, condition=None, return_values=None, **kwargs):
-        hash_key = getattr(model.__class__, model._hash_keyname)
+        key_name = model._hash_keyname
         overwrite = kwargs.get('overwrite', False)
+        hash_key = getattr(model.__class__, key_name)
+        if not overwrite:
+            model.add_db_conditions(hash_key.exists())
         if condition is not None:
-            condition = condition & (hash_key.exists())
-        elif not overwrite:
-            condition = hash_key.exists()
+            model.add_db_conditions(condition)
+        condition = model._output_db_condition()
+        # set hash key if missing
+        if not getattr(model, key_name):
+            if 'HASH_KEY' in os.environ:
+                setattr(model, key_name, os.environ['HASH_KEY'])
         return super(TransactWrite, self).update(model, actions, condition, return_values)
 
     def delete(self, model, condition=None, **kwargs):
-        hash_key = getattr(model.__class__, model._hash_keyname)
-        overwrite = kwargs.get('overwrite', False)
+        key_name = model._hash_keyname
+        hash_key = getattr(model.__class__, key_name)
+        model.add_db_conditions(hash_key.exists())
         if condition is not None:
-            condition = condition & (hash_key.exists())
-        elif not overwrite:
-            condition = hash_key.exists()
+            model.add_db_conditions(condition)
+        condition = model._output_db_condition()
+        # set hash key if missing
+        if not getattr(model, key_name):
+            if 'HASH_KEY' in os.environ:
+                setattr(model, key_name, os.environ['HASH_KEY'])
         super(TransactWrite, self).delete(model, condition)
