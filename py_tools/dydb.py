@@ -122,7 +122,7 @@ class DbModel(Model):
         """increment or decrement value number or add to set"""
         if isinstance(attr, str):
             attr = operator.attrgetter(attr)(cls)
-        return attr.set(attr + value) if isinstance(value, int) else attr.add(value)
+        return attr.add(value)
 
     @classmethod
     def append_or_prepend(cls, attr, value, choice='append'):
