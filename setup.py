@@ -18,6 +18,8 @@ setup(
         'slack_sdk',
         'pyjwt',
         'jsonschema==3.0.0a3',
+        'cryptography',
+        'jwcrypto',
         'pynamodb @ git+https://github.com/pynamodb/PynamoDB#egg=pynamodb'
     ]
 )
