@@ -16,7 +16,8 @@ def encode_token(payload, secret=''):
 
 def decode_token(payload, secret=''):
     key = jwk.JWK(k=secret, kty='oct')
-    return jwt.JWT(key=key, jwt=payload).claims
+    jwt_token = jwt.JWT(key=key, jwt=payload)
+    return json.loads(jwt_token.claims)
 
 
 def encrypt_token(payload, public_key_pem):
