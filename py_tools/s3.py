@@ -62,6 +62,14 @@ def generate_url(bucket, key, media_size):
     return s3_url
 
 
+def create_presigned_url(bucket_name, object_name, expiration=3600):
+    response = s3.generate_presigned_url('get_object',
+                                         Params={'Bucket': bucket_name, 'Key': object_name},
+                                         ExpiresIn=expiration
+                                         )
+    return response
+
+
 def get_json_object(bucket, key, sort=False, **kwargs):
     response = get_object(bucket, key, **kwargs)
     response = loads(response)
