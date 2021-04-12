@@ -68,7 +68,6 @@ class Sqs:
         return self._run_batch(entries, 'delete_message_batch')
 
     def send_back_unprocessed(self, unprocessed, delay=300):
-        print('send_back_unprocessed', unprocessed)
         entries = []
         message_attrs_keys = {
             'stringValue': 'StringValue',
