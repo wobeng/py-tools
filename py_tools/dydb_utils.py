@@ -1,3 +1,5 @@
+import re
+
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 
@@ -29,6 +31,7 @@ class StreamRecord:
         self.old_image = self.deserialize_output(record['dynamodb'].get('OldImage', {}))
         self.event_name = record['eventName'].lower()
         self.table_name = record['eventSourceARN'].split('/')[-3]
+        self.trigger_module = '_'.join(re.findall('[A-Z][^A-Z]*', self.table_name)).lower()
         if record.get('userIdentity', {}).get('type', '') == 'Service':
             self.ttl = True
         else:
