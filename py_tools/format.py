@@ -2,6 +2,7 @@ import operator
 from datetime import datetime
 from functools import reduce
 
+import dpath.util
 import simplejson
 
 
@@ -40,27 +41,20 @@ class FormatData:
     def get_by_path(item, path_list):
         return reduce(operator.getitem, path_list, item)
 
-    @staticmethod
-    def set_by_path(item, path_list, value):
-        FormatData.get_by_path(item, path_list[:-1])[path_list[-1]] = value
-
-    @staticmethod
-    def delete_in_dict(item, path_list):
-        del FormatData.get_by_path(item, path_list[:-1])[path_list[-1]]
-
-    def inc(self, keys):
+    def inc(self, keys, separator='.'):
+        output = {}
         for k in keys:
             try:
-                value = self.get_by_path(self.item, k.split('.'))
-                FormatData.set_by_path(self.output, k.split('.'), value)
+                value = self.get_by_path(self.item, k.split(separator))
+                dpath.util.new(output, k, value, separator=separator)
             except KeyError as e:
                 continue
-        return self.output
+        return output
 
-    def exc(self, keys):
+    def exc(self, keys, separator='.'):
         for k in keys:
             try:
-                FormatData.delete_in_dict(self.item, k.split('.'))
+                dpath.util.delete(self.item, k, separator=separator)
             except KeyError as e:
                 continue
         return self.item
