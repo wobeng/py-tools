@@ -4,6 +4,7 @@ from functools import reduce
 
 import dpath.util
 import simplejson
+from dpath.exceptions import PathNotFound
 
 
 class ModelEncoder(simplejson.JSONEncoder):
@@ -55,6 +56,6 @@ class FormatData:
         for k in keys:
             try:
                 dpath.util.delete(self.item, k, separator=separator)
-            except KeyError as e:
+            except (KeyError, PathNotFound) as e:
                 continue
         return self.item
