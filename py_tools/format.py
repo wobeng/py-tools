@@ -1,10 +1,7 @@
-import operator
 from datetime import datetime
-from functools import reduce
 
-import dpath.util
 import simplejson
-from dpath.exceptions import PathNotFound
+from dotty_dict import Dotty
 
 
 class ModelEncoder(simplejson.JSONEncoder):
@@ -34,28 +31,21 @@ def clean_empty(d):
 
 
 class FormatData:
-    def __init__(self, item):
+    def __init__(self, item, separator='.'):
         self.output = {}
-        self.item = dict(item)
+        self.separator = separator
+        self.item = Dotty(item, self.separator)
 
-    @staticmethod
-    def get_by_path(item, path_list):
-        return reduce(operator.getitem, path_list, item)
+    def inc(self, keys):
+        output = Dotty({}, self.separator)
+        for k in keys:
+            output[k] = self.item.get(k)
+        return dict(output)
 
-    def inc(self, keys, separator='.'):
-        output = {}
+    def exc(self, keys):
         for k in keys:
             try:
-                value = self.get_by_path(self.item, k.split(separator))
-                dpath.util.new(output, k, value, separator=separator)
-            except KeyError as e:
+                del self.item[k]
+            except KeyError:
                 continue
-        return output
-
-    def exc(self, keys, separator='.'):
-        for k in keys:
-            try:
-                dpath.util.delete(self.item, k, separator=separator)
-            except (KeyError, PathNotFound) as e:
-                continue
-        return self.item
+        return dict(self.item)

@@ -20,7 +20,7 @@ setup(
         'jsonschema==3.0.0a3',
         'cryptography',
         'jwcrypto',
-        'dpath',
+        'dotty-dict',
         'pynamodb @ git+https://github.com/pynamodb/PynamoDB#egg=pynamodb'
     ]
 )
