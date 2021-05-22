@@ -36,10 +36,13 @@ class FormatData:
         self.separator = separator
         self.item = Dotty(item, self.separator)
 
-    def inc(self, keys):
+    def inc(self, keys, skip_missing=True):
         output = Dotty({}, self.separator)
         for k in keys:
-            output[k] = self.item.get(k)
+            value = self.item.get(k, default='_missing')
+            if skip_missing and value == '_missing':
+                continue
+            output[k] = value
         return dict(output)
 
     def exc(self, keys):
