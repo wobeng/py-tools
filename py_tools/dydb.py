@@ -5,7 +5,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pynamodb.attributes import UTCDateTimeAttribute
+import six
+from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
@@ -19,6 +20,42 @@ class ModelEncoder(format.ModelEncoder):
         if hasattr(obj, 'attribute_values'):
             return obj.attribute_values
         return super(ModelEncoder, self).default(obj)
+
+
+class DynamicMapAttribute(MapAttribute):
+    element_type = None
+
+    def __init__(self, *args, of=None, **kwargs):
+        if of:
+            if not issubclass(of, MapAttribute):
+                raise ValueError("'of' must be subclass of MapAttribute")
+            self.element_type = of
+        super(DynamicMapAttribute, self).__init__(*args, **kwargs)
+
+    def _set_attributes(self, **attributes):
+        """
+        Sets the attributes for this object
+        """
+        for attr_name, attr_value in six.iteritems(attributes):
+            setattr(self, attr_name, attr_value)
+
+    def deserialize(self, values):
+        """
+        Decode from map of AttributeValue types.
+        """
+        if not self.element_type:
+            return super(DynamicMapAttribute, self).deserialize(values)
+
+        class_for_deserialize = self.element_type()
+        return {
+            k: class_for_deserialize.deserialize(attr_value)
+            for k, v in values.items()
+            for _, attr_value in v.items()
+        }
+
+    @classmethod
+    def is_raw(cls):
+        return cls == DynamicMapAttribute
 
 
 class DbModel(Model):
@@ -143,7 +180,14 @@ class DbModel(Model):
         prepends = prepends or {}
         actions = actions or []
         for k, v in updates.items():
-            actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
+            try:
+                actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
+            except AttributeError as e:
+                if 'DynamicMapAttribute' not in str(e):
+                    raise
+                key = str(k.split('.')[-1])
+                k = k.replace('.' + key, '')
+                actions.append(operator.attrgetter(k)(cls)[key].set(v))
         for k, v in adds.items():
             actions.append(cls.add(k, v))
         for k, v in appends.items():
