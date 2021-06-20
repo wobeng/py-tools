@@ -54,6 +54,12 @@ class Slack:
             ts=ts
         )
 
+    def get_perm_link(self, ts):
+        self.client.chat_getPermalink(
+            channel=self.channel_id,
+            message_ts=ts
+        )
+
     def send_message(self, message, attachment=None, thread_ts=None):
         blocks = [
             {
