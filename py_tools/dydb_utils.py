@@ -3,6 +3,26 @@ import re
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 
+def get_all_items(table, attributes_to_get=None):
+    last_evaluated_key = None
+    items = []
+
+    while True:
+        results = table.scan(
+            last_evaluated_key=last_evaluated_key,
+            attributes_to_get=attributes_to_get
+        )
+        for item in results:
+            items.append(item)
+
+        if results.last_evaluated_key is None:
+            break
+
+        last_evaluated_key = results.last_evaluated_key
+
+    return items
+
+
 class StreamRecord:
 
     @staticmethod
