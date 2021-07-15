@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;serverAliveInterval&quot;:300}" id="1c22d77c-6437-4812-ba36-1fd0292acaa7" port="22" customName="wobeng" nameFormat="CUSTOM">
+        <option name="customName" value="wobeng" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="b234f96f-3729-4817-bbdc-25fc034ff7bf" name="wobeng">
+        <fileTransfer accessType="SFTP" port="22" sshConfigId="1c22d77c-6437-4812-ba36-1fd0292acaa7" sshConfig="wobeng">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
