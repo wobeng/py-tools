@@ -40,6 +40,12 @@ class Slack:
         subject = 'Error occurred in ' + domain
         self.send_snippet(subject, subject, message, code_type=code_type, thread_ts=thread_ts)
 
+    def delete_message(self, thread_ts):
+        return self.client.chat_delete(
+            channel=self.channel_id,
+            ts=thread_ts
+        )
+
     def send_raw_message(self, blocks, thread_ts=None):
         return self.client.chat_postMessage(
             channel=self.channel_id,
