@@ -1,16 +1,18 @@
 import traceback
 
 from slack_sdk import WebClient
-
+import time
 from py_tools.format import dumps
 
 
 class Slack:
-    def __init__(self, token, channel_name=None, channel_id=None):
-        self.client = WebClient(token)
+    def __init__(self, bot_token, channel_name=None, channel_id=None, user_token=None):
+        self.client = WebClient(bot_token)
         self.channel_id = channel_id
+        self.user_token = user_token
 
-        channels = self.client.conversations_list(types='public_channel,private_channel')
+        channels = self.client.conversations_list(
+            types='public_channel,private_channel')
 
         if channel_name:
             for channel in channels['channels']:
@@ -22,8 +24,10 @@ class Slack:
                 name=channel_name.lower(),
                 is_private=True
             )['channel']['id']
-            admins = [u['id'] for u in self.client.users_list()['members'] if u.get('is_admin') or u.get('is_owner')]
-            self.client.conversations_invite(channel=self.channel_id, users=admins)
+            admins = [u['id'] for u in self.client.users_list(
+            )['members'] if u.get('is_admin') or u.get('is_owner')]
+            self.client.conversations_invite(
+                channel=self.channel_id, users=admins)
 
     def send_snippet(self, title, initial_comment, code, code_type='python', thread_ts=None):
         return self.client.files_upload(
@@ -38,8 +42,8 @@ class Slack:
     def send_exception_snippet(self, domain, event, code_type='python', thread_ts=None):
         message = traceback.format_exc() + '\n\n\n' + dumps(event, indent=2)
         subject = 'Error occurred in ' + domain
-        self.send_snippet(subject, subject, message, code_type=code_type, thread_ts=thread_ts)
-
+        self.send_snippet(subject, subject, message,
+                          code_type=code_type, thread_ts=thread_ts)
 
     def send_raw_message(self, blocks, thread_ts=None):
         return self.client.chat_postMessage(
@@ -86,3 +90,33 @@ class Slack:
             }
 
         return self.send_raw_message(blocks, thread_ts)
+
+    def try_and_delete_message(self, message_ts, as_user=False):
+        try:
+            self.client.chat_delete(
+                channel=self.channel_id,
+                ts=message_ts,
+                as_user=as_user
+            )
+        except BaseException:
+            print('Error messages from slack')
+            traceback.print_exc()
+
+    def delete_message(self, ts):
+        as_user = False
+        if self.user_token:
+            self.client = WebClient(self.user_token)
+            as_user = True
+        while ts:
+            response = self.client.conversations_replies(
+                ts=ts,
+                limit=999,
+                channel=self.channel_id
+            )
+            for message in response['messages']:
+                if message['ts'] != ts:
+                    self.try_and_delete_message(message['ts'], as_user)
+                    time.sleep(1)
+            if not response['has_more']:
+                break
+        self.try_and_delete_message(ts, as_user)
