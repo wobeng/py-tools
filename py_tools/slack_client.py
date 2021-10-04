@@ -1,8 +1,9 @@
 import traceback
 
-from slack_sdk import WebClient
+from slack_sdk import WebClient, errors
 import time
 from py_tools.format import dumps
+import backoff
 
 
 class Slack:
@@ -91,6 +92,7 @@ class Slack:
 
         return self.send_raw_message(blocks, thread_ts)
 
+    @backoff.on_exception(backoff.expo, errors.SlackApiError)
     def try_and_delete_message(self, message_ts, as_user=False):
         try:
             self.client.chat_delete(

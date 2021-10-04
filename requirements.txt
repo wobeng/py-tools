@@ -9,4 +9,5 @@ jsonschema==3.0.0a3
 cryptography
 jwcrypto
 dotty-dict
+backoff
 git+https://github.com/pynamodb/PynamoDB#egg=pynamodb
