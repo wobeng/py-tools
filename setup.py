@@ -17,7 +17,7 @@ setup(
         'python-dateutil',
         'slack_sdk',
         'pyjwt',
-        'jsonschema==3.0.0a3',
+        'jsonschema',
         'cryptography',
         'jwcrypto',
         'dotty-dict',
