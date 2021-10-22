@@ -11,15 +11,11 @@ class Slack:
         self.client = WebClient(bot_token)
         self.channel_id = channel_id
         self.user_token = user_token
-
-        channels = self.client.conversations_list(
-            types='public_channel,private_channel')
+        self.channel_name = channel_name
 
         if channel_name:
-            for channel in channels['channels']:
-                if channel['name'] == channel_name:
-                    self.channel_id = channel['id']
-                    break
+            self.channel_id = self.get_channel_id(channel_name)
+
         if not self.channel_id:
             self.channel_id = self.client.conversations_create(
                 name=channel_name.lower(),
@@ -29,6 +25,14 @@ class Slack:
             )['members'] if u.get('is_admin') or u.get('is_owner')]
             self.client.conversations_invite(
                 channel=self.channel_id, users=admins)
+
+    def get_channel_id(self, name):
+        channels = self.client.conversations_list(
+            types='public_channel,private_channel')
+
+        for channel in channels['channels']:
+            if channel['name'] == name:
+                return channel['id']
 
     def send_snippet(self, title, initial_comment, code, code_type='python', thread_ts=None):
         return self.client.files_upload(
@@ -103,8 +107,10 @@ class Slack:
         except errors.SlackApiError as e:
             if e.response.status_code == 429:
                 time.sleep(int(e.response.headers['Retry-After']))
+            if e.response['error'] == 'message_not_found':
+                return
             raise e
-            
+
         except BaseException:
             print('Error messages from slack')
             traceback.print_exc()
@@ -115,6 +121,9 @@ class Slack:
             self.client = WebClient(self.user_token)
             as_user = True
         for slack_ts in slack_messages:
+            if 'channel' in slack_ts:
+                self.channel_id = self.get_channel_id(slack_ts['channel'])
+                slack_ts = slack_ts['ts']
             while slack_ts:
                 try:
                     response = self.client.conversations_replies(
@@ -129,5 +138,5 @@ class Slack:
                     if message['ts'] != slack_ts:
                         self.try_and_delete_message(message['ts'], as_user)
                 if not response['has_more']:
-                    break
+                        break
             self.try_and_delete_message(slack_ts, as_user)
