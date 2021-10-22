@@ -104,21 +104,22 @@ class Slack:
             print('Error messages from slack')
             traceback.print_exc()
 
-    def delete_message(self, ts):
+    def delete_message(self, slack_messages):
         as_user = False
         if self.user_token:
             self.client = WebClient(self.user_token)
             as_user = True
-        while ts:
-            response = self.client.conversations_replies(
-                ts=ts,
-                limit=999,
-                channel=self.channel_id
-            )
-            for message in response['messages']:
-                if message['ts'] != ts:
-                    self.try_and_delete_message(message['ts'], as_user)
-                    time.sleep(1)
-            if not response['has_more']:
-                break
-        self.try_and_delete_message(ts, as_user)
+        for slack_ts in slack_messages:
+            while slack_ts:
+                response = self.client.conversations_replies(
+                    ts=slack_ts,
+                    limit=999,
+                    channel=self.channel_id
+                )
+                for message in response['messages']:
+                    if message['ts'] != slack_ts:
+                        self.try_and_delete_message(message['ts'], as_user)
+                        time.sleep(1)
+                if not response['has_more']:
+                    break
+            self.try_and_delete_message(slack_ts, as_user)
