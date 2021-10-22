@@ -100,6 +100,11 @@ class Slack:
                 ts=message_ts,
                 as_user=as_user
             )
+        except errors.SlackApiError as e:
+            if e.response.status_code == 429:
+                time.sleep(int(e.response.headers['Retry-After']))
+            raise e
+            
         except BaseException:
             print('Error messages from slack')
             traceback.print_exc()
@@ -111,15 +116,18 @@ class Slack:
             as_user = True
         for slack_ts in slack_messages:
             while slack_ts:
-                response = self.client.conversations_replies(
-                    ts=slack_ts,
-                    limit=999,
-                    channel=self.channel_id
-                )
+                try:
+                    response = self.client.conversations_replies(
+                        ts=slack_ts,
+                        limit=999,
+                        channel=self.channel_id
+                    )
+                except errors.SlackApiError as e:
+                    if e.response['error'] == 'thread_not_found':
+                        break
                 for message in response['messages']:
                     if message['ts'] != slack_ts:
                         self.try_and_delete_message(message['ts'], as_user)
-                        time.sleep(1)
                 if not response['has_more']:
                     break
             self.try_and_delete_message(slack_ts, as_user)
