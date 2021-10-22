@@ -1,6 +1,5 @@
 import json
 
-import jwt
 from jwcrypto import jwt, jwk
 
 
@@ -30,5 +29,6 @@ def encrypt_token(payload, public_key_pem):
 
 def decrypt_token(token, private_key_pem):
     jwk_key = jwk.JWK.from_pem(private_key_pem.encode('UTF-8'))
-    jwt_token = jwt.JWT(key=jwk_key, jwt=token, algs=['A128CBC-HS256', 'RSA-OAEP'])
+    jwt_token = jwt.JWT(key=jwk_key, jwt=token, algs=[
+                        'A128CBC-HS256', 'RSA-OAEP'])
     return json.loads(jwt_token.claims)

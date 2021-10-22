@@ -16,7 +16,6 @@ setup(
         'requests',
         'python-dateutil',
         'slack_sdk',
-        'pyjwt',
         'jsonschema',
         'cryptography',
         'jwcrypto',
