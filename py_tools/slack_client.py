@@ -4,6 +4,7 @@ from slack_sdk import WebClient, errors
 import time
 from py_tools.format import dumps
 import backoff
+import tempfile
 
 
 class Slack:
@@ -35,14 +36,17 @@ class Slack:
                 return channel['id']
 
     def send_snippet(self, title, initial_comment, code, code_type='python', thread_ts=None):
-        return self.client.files_upload(
-            channels=self.channel_id,
-            title=title,
-            initial_comment=initial_comment.replace('<br>', ''),
-            content=code,
-            filetype=code_type,
-            thread_ts=thread_ts
-        )['ts']
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.log') as temp:
+            temp.write(code)
+            temp.flush()
+            return self.client.files_upload(
+                channels=self.channel_id,
+                title=title,
+                initial_comment=initial_comment.replace('<br>', ''),
+                file=temp.name,
+                filetype=code_type,
+                thread_ts=thread_ts
+            )['ts']
 
     def send_exception_snippet(self, domain, event, code_type='python', thread_ts=None):
         message = traceback.format_exc() + '\n\n\n' + dumps(event, indent=2)
@@ -138,5 +142,5 @@ class Slack:
                     if message['ts'] != slack_ts:
                         self.try_and_delete_message(message['ts'], as_user)
                 if not response['has_more']:
-                        break
+                    break
             self.try_and_delete_message(slack_ts, as_user)
