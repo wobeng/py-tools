@@ -116,8 +116,9 @@ class DbModel(Model):
             self.add_db_conditions(condition)
         return super(DbModel, self).save(DbModel._output_db_condition())
 
-    def update(self, actions, condition=None):
-        self.add_db_conditions(self._hash_key.exists())
+    def update(self, actions, condition=None, overwrite=False):
+        if not overwrite:
+            self.add_db_conditions(self._hash_key.exists())
         if condition is not None:
             self.add_db_conditions(condition)
         return super(DbModel, self).update(actions, DbModel._output_db_condition())
@@ -210,10 +211,10 @@ class DbModel(Model):
                     deletes: Optional[List[Any]] = None, adds: Optional[Dict[Any, Any]] = None,
                     appends: Optional[Dict[Any, Any]] = None,
                     prepends: Optional[Dict[Any, Any]] = None,
-                    actions=None):
+                    actions=None,  overwrite=False):
         hash_key = hash_key or os.environ.get('HASH_KEY', None)
         cls_obj = cls(hash_key, range_key)
-        cls_obj.update(cls.update_attributes(updates, deletes, adds, appends, prepends, actions))
+        cls_obj.update(cls.update_attributes(updates, deletes, adds, appends, prepends, actions),overwrite=overwrite)
         return cls_obj
 
     @classmethod
