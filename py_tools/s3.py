@@ -85,3 +85,10 @@ def download_object(bucket, key, save_dir, rename=False):
     output = os.path.join(save_dir, filename)
     s3.download_file(bucket, key, output)
     return output
+
+
+def upload_file(file_name, bucket, object_name=None):
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = os.path.basename(file_name)
+    s3.upload_file(file_name, bucket, object_name)
