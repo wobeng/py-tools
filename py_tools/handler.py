@@ -16,7 +16,10 @@ class Handlers:
         wrapper = self.record_wrapper or StreamRecord
         record = wrapper(self.record)
         m = self.module_handler(self.file, record.trigger_module, folder='dynamodb')
-        return m.handler(record)
+        functions = getattr(m, record.event_name, [])
+        for function in functions:
+            function(record, None)
+        return
 
     def sqs(self):
         module_name = self.record['eventSourceARN'].split(
