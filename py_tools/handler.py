@@ -6,9 +6,10 @@ from py_tools.format import loads
 
 
 class Handlers:
-    def __init__(self, file, record, record_wrapper=None):
+    def __init__(self, file, record, context, record_wrapper=None):
         self.file = file
         self.record = record
+        self.context = context
         self.record_wrapper = record_wrapper
 
     def dynamodb(self):
@@ -18,7 +19,7 @@ class Handlers:
             self.file, record.trigger_module, folder='dynamodb')
         functions = getattr(m, record.event_name, [])
         for function in functions:
-            function(record, None)
+            function(record, self.context)
         return
 
     def sqs(self):
@@ -50,7 +51,7 @@ def aws_lambda_handler(file, record_wrapper=None):
                 ':')[-1].lower()  # should be dynamodb, sqs or adhoc
             try:
                 method = getattr(
-                    Handlers(file, record, record_wrapper), source_handler)
+                    Handlers(file, record, context, record_wrapper), source_handler)
                 processed.append(method())  # run and add to process list
             except BaseException:
                 unprocessed.append(record)
