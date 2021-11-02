@@ -2,7 +2,7 @@ import importlib.util
 import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
-
+from format import loads
 
 
 class Handlers:
@@ -22,7 +22,7 @@ class Handlers:
         module_name = self.record['eventSourceARN'].split(
             ':')[-1].replace('.fifo', '')
         m = self.module_handler(self.file, module_name, folder='sqs')
-        return m.handler(format.loads(self.record['body']), self.record)
+        return m.handler(loads(self.record['body']), self.record)
 
     def adhoc(self):
         m = self.module_handler(self.file, self.record['type'], folder='adhoc')
