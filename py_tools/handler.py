@@ -2,7 +2,7 @@ import importlib.util
 import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
-import format
+from py_tools.format import loads
 
 
 class Handlers:
@@ -11,11 +11,11 @@ class Handlers:
         self.record = record
         self.record_wrapper = record_wrapper
 
-
     def dynamodb(self):
         wrapper = self.record_wrapper or StreamRecord
         record = wrapper(self.record)
-        m = self.module_handler(self.file, record.trigger_module, folder='dynamodb')
+        m = self.module_handler(
+            self.file, record.trigger_module, folder='dynamodb')
         functions = getattr(m, record.event_name, [])
         for function in functions:
             function(record, None)
@@ -25,7 +25,7 @@ class Handlers:
         module_name = self.record['eventSourceARN'].split(
             ':')[-1].replace('.fifo', '')
         m = self.module_handler(self.file, module_name, folder='sqs')
-        return m.handler(format.loads(self.record['body']), self.record)
+        return m.handler(loads(self.record['body']), self.record)
 
     def adhoc(self):
         m = self.module_handler(self.file, self.record['type'], folder='adhoc')
@@ -40,17 +40,18 @@ class Handlers:
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
         return m
-        
-    
+
 
 def aws_lambda_handler(file, record_wrapper=None):
     def handler(event, context):
         processed, unprocessed = [], []
         for record in event['Records']:
-            source_handler = record['eventSource'].split(':')[-1].lower() # should be dynamodb, sqs or adhoc
+            source_handler = record['eventSource'].split(
+                ':')[-1].lower()  # should be dynamodb, sqs or adhoc
             try:
-                method = getattr(Handlers(file, record, record_wrapper), source_handler)
-                processed.append(method()) #run and add to process list
+                method = getattr(
+                    Handlers(file, record, record_wrapper), source_handler)
+                processed.append(method())  # run and add to process list
             except BaseException:
                 unprocessed.append(record)
                 traceback.print_exc()
