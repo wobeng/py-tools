@@ -47,6 +47,13 @@ class Handlers:
 
 def aws_lambda_handler(file, record_wrapper=None, before_request=None):
     def handler(event, context):
+        many = True
+
+        if 'Records' not in event:
+            many = False
+            event.setdefault('eventSource', 'aws:adhoc')
+            event = {'Records': [event]}
+
         processed, unprocessed = [], []
         for record in event['Records']:
             source_handler = record['eventSource'].split(
@@ -59,5 +66,6 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None):
                 unprocessed.append(record)
                 traceback.print_exc()
         # send back unprocessed later
-        return processed
+        return processed if many else processed[0]
+
     return handler
