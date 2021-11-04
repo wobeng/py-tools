@@ -2,7 +2,7 @@ import importlib.util
 import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
-from py_tools.format import loads
+from py_tools.format import loads, dumps
 
 
 class Handlers:
@@ -64,8 +64,12 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None):
                 processed.append(method())  # run and add to process list
             except BaseException:
                 unprocessed.append(record)
+                print('Unprocessed Record: \n {} \n\n'.format(
+                    dumps(record, indent=1)))
                 traceback.print_exc()
         # send back unprocessed later
+        if not processed:
+            return
         return processed if many else processed[0]
 
     return handler
