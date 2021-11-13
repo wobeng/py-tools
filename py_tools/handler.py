@@ -66,7 +66,7 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
             if queue_replay and source_handler == 'sqs':
                 if record['eventSourceARN'].split(':')[-1] == queue_replay:
                     receive_count = int(
-                        record['messageAttributes']['receive_count'])
+                        record['messageAttributes']['receive_count']['stringValue'])
                     record = loads(record['body'])
                     source_handler = record['eventSource'].split(
                         ':')[-1].lower()  # should be dynamodb, sqs or adhoc
