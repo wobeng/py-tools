@@ -83,7 +83,7 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                     'Id': str(uuid4()),
                     'MessageGroupId': source_handler,
                     'MessageAttributes': {
-                        'receive_count': {'StringValue': receive_count, 'DataType': 'String'}
+                        'receive_count': {'StringValue': str(receive_count), 'DataType': 'String'}
                     }
                 }
                 if receive_count < 5:
@@ -96,7 +96,7 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                         'StringValue': source_handler
                     }
                     kills.append(entry)
-                print('Unprocessed Record:====>\n\n{}\n\n\n\nException:====>\n\n{}'.format(
+                print('Unprocessed Record:====>\n\n{}\n\nException:====>\n\n{}\n\n'.format(
                     body, reason))
 
         # send back unprocessed later
