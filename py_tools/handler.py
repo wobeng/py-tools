@@ -83,18 +83,17 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                     'Id': str(uuid4()),
                     'MessageGroupId': source_handler,
                     'MessageAttributes': {
+                        'source': {'StringValue': source_handler, 'DataType': 'String'},
                         'receive_count': {'StringValue': str(receive_count), 'DataType': 'String'}
                     }
                 }
                 if receive_count < 5:
                     replays.append(entry)
                 else:
-                    entry['MessageBody'] = {
-                        'record': entry['MessageBody'], 'reason': reason}
-                    entry['MessageAttributes']['source'] = {
-                        'DataType': 'String',
-                        'StringValue': source_handler
-                    }
+                    entry['MessageBody'] = dumps({
+                        'record': record, 
+                        'reason': reason
+                        })
                     kills.append(entry)
                 print('Unprocessed Record:====>\n\n{}\n\nException:====>\n\n{}\n\n'.format(
                     body, reason))
