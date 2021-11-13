@@ -3,6 +3,8 @@ import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
 from py_tools.format import loads, dumps
+from py_tools.sqs import Sqs
+from uuid import uuid4
 
 
 class Handlers:
@@ -45,7 +47,7 @@ class Handlers:
         return m
 
 
-def aws_lambda_handler(file, record_wrapper=None, before_request=None):
+def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_replay=None, queue_dead=None):
     def handler(event, context):
         many = True
 
@@ -54,22 +56,52 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None):
             event.setdefault('eventSource', 'aws:adhoc')
             event = {'Records': [event]}
 
-        processed, unprocessed = [], []
+        processed, replays, kills = [], [], []
         for record in event['Records']:
-            source_handler = record['eventSource'].split(
-                ':')[-1].lower()  # should be dynamodb, sqs or adhoc
+
+            receive_count = 1
+            source_handler = record['eventSource'].split(':')[-1].lower()  # should be dynamodb, sqs or adhoc
+
+            if queue_replay and source_handler == 'sqs':
+                if record['eventSourceARN'].split(':')[-1] == queue_replay:
+                    receive_count = int(
+                        record['messageAttributes']['receive_count'])
+                    record = loads(record['body'])
+                    source_handler = record['eventSource'].split(':')[-1].lower()  # should be dynamodb, sqs or adhoc
             try:
                 method = getattr(
                     Handlers(file, record, context, record_wrapper, before_request), source_handler)
                 processed.append(method())  # run and add to process list
             except BaseException:
-                unprocessed.append(record)
-                print('Unprocessed Record: \n {} \n\n'.format(
-                    dumps(record, indent=1)))
-                traceback.print_exc()
+                body = dumps(record, indent=1)
+                reason = traceback.format_exc()
+                receive_count += 1
+                entry = {
+                    'MessageBody': body,
+                    'Id': str(uuid4()),
+                    'MessageAttributes': {'receive_count': {
+                        'StringValue': receive_count,
+                        'DataType': 'String'}
+                    }
+                }
+                if receive_count < 5:
+                    replays.append(entry)
+                else:
+                    entry['MessageBody'] = {
+                        'record': entry['MessageBody'], 'reason': reason}
+                    kills.append(entry)
+                print('Unprocessed Record:\n\n{}\n\n{}'.format(body, reason))
+
         # send back unprocessed later
+        if replays and queue_replay:
+            Sqs(queue_replay).send_message_batch(replays)
+        # kill repetitive errors
+        if kills and queue_dead:
+            Sqs(queue_dead).send_message_batch(kills)
+
         if not processed:
             return
+
         return processed if many else processed[0]
 
     return handler
