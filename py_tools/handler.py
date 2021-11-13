@@ -60,14 +60,16 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
         for record in event['Records']:
 
             receive_count = 1
-            source_handler = record['eventSource'].split(':')[-1].lower()  # should be dynamodb, sqs or adhoc
+            source_handler = record['eventSource'].split(
+                ':')[-1].lower()  # should be dynamodb, sqs or adhoc
 
             if queue_replay and source_handler == 'sqs':
                 if record['eventSourceARN'].split(':')[-1] == queue_replay:
                     receive_count = int(
                         record['messageAttributes']['receive_count'])
                     record = loads(record['body'])
-                    source_handler = record['eventSource'].split(':')[-1].lower()  # should be dynamodb, sqs or adhoc
+                    source_handler = record['eventSource'].split(
+                        ':')[-1].lower()  # should be dynamodb, sqs or adhoc
             try:
                 method = getattr(
                     Handlers(file, record, context, record_wrapper, before_request), source_handler)
@@ -79,9 +81,8 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 entry = {
                     'MessageBody': body,
                     'Id': str(uuid4()),
-                    'MessageAttributes': {'receive_count': {
-                        'StringValue': receive_count,
-                        'DataType': 'String'}
+                    'MessageAttributes': {
+                        'receive_count': {'StringValue': receive_count, 'DataType': 'String'}
                     }
                 }
                 if receive_count < 5:
@@ -89,6 +90,10 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 else:
                     entry['MessageBody'] = {
                         'record': entry['MessageBody'], 'reason': reason}
+                    entry['MessageAttributes']['source'] = {
+                        'DataType': 'String',
+                        'StringValue': source_handler
+                    }
                     kills.append(entry)
                 print('Unprocessed Record:\n\n{}\n\n{}'.format(body, reason))
 
