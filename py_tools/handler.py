@@ -95,6 +95,7 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                         'StringValue': source_handler
                     }
                     kills.append(entry)
+                print(replays, queue_replay, kills, queue_dead)
                 print('Unprocessed Record:====>\n\n{}\n\n\n\nException:====>\n\n{}'.format(
                     body, reason))
 
