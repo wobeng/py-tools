@@ -87,7 +87,7 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                     }
                 }
 
-                if receive_count > 4:
+                if receive_count > 3:
                     entry['MessageBody'] = dumps({
                         'record': record,
                         'reason': reason
