@@ -76,13 +76,12 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 processed.append(method())  # run and add to process list
             except BaseException:
                 reason = traceback.format_exc()
-                receive_count += 1
                 entry = {
                     'Id': str(uuid4()),
                     'MessageGroupId': source_handler,
                     'MessageAttributes': {
                         'source': {'StringValue': source_handler, 'DataType': 'String'},
-                        'receive_count': {'StringValue': str(receive_count), 'DataType': 'String'}
+                        'receive_count': {'StringValue': str(receive_count  + 1), 'DataType': 'String'}
                     }
                 }
 
