@@ -75,11 +75,9 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                     Handlers(file, record, context, record_wrapper, before_request), source_handler)
                 processed.append(method())  # run and add to process list
             except BaseException:
-                body = dumps(record, indent=1)
                 reason = traceback.format_exc()
                 receive_count += 1
                 entry = {
-                    'MessageBody': body,
                     'Id': str(uuid4()),
                     'MessageGroupId': source_handler,
                     'MessageAttributes': {
@@ -87,17 +85,21 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                         'receive_count': {'StringValue': str(receive_count), 'DataType': 'String'}
                     }
                 }
-                if receive_count < 5:
-                    replays.append(entry)
-                else:
-                    entry['MessageBody'] = dumps({
-                        'record': record, 
-                        'reason': reason
-                        })
-                    kills.append(entry)
-                print('Unprocessed Record:====>\n\n{}\n\nException:====>\n\n{}\n\n'.format(
-                    body, reason))
 
+                if receive_count > 4:
+                    entry['MessageBody'] = {
+                        'record': record,
+                        'reason': reason
+                        }
+                    kills.append(dumps(entry))
+                else:
+                    entry['MessageBody'] = record
+                    replays.append(dumps(entry))
+                
+                print('Receive Count:====>{}'.format(receive_count))
+                print('Unprocessed Record:====>\n\n{}'.format(dumps(record, indent=1)))
+                print('Exception:====>\n\n{}'.format(reason))
+                
         # send back unprocessed later
         if replays and queue_replay:
             Sqs(queue_replay).send_message_batch(replays)
