@@ -76,9 +76,11 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 processed.append(method())  # run and add to process list
             except BaseException:
                 reason = traceback.format_exc()
+                uid = str(uuid4())
                 entry = {
-                    'Id': str(uuid4()),
+                    'Id': uid,
                     'MessageGroupId': source_handler,
+                    'MessageDeduplicationId' : uid,
                     'MessageAttributes': {
                         'source': {'StringValue': source_handler, 'DataType': 'String'},
                         'receive_count': {'StringValue': str(receive_count  + 1), 'DataType': 'String'}
@@ -98,9 +100,6 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 print('Receive Count:====>\n\n{}'.format(receive_count))
                 print('Unprocessed Record:====>\n\n{}'.format(dumps(record, indent=1)))
                 print('Exception:====>\n\n{}'.format(reason))
-                print('entry -->', entry)
-                print('replays -->', replays, queue_replay)
-                print('kills -->', kills, queue_dead)
 
         # send back unprocessed later
         if replays and queue_replay:
