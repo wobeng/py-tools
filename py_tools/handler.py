@@ -87,19 +87,19 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                 }
 
                 if receive_count > 4:
-                    entry['MessageBody'] = {
+                    entry['MessageBody'] = dumps({
                         'record': record,
                         'reason': reason
-                        }
-                    kills.append(dumps(entry))
+                        })
+                    kills.append(entry)
                 else:
-                    entry['MessageBody'] = record
-                    replays.append(dumps(entry))
+                    entry['MessageBody'] = dumps(record)
+                    replays.append(entry)
                 
-                print('Receive Count:====>{}'.format(receive_count))
+                print('Receive Count:====>\n\n{}'.format(receive_count))
                 print('Unprocessed Record:====>\n\n{}'.format(dumps(record, indent=1)))
                 print('Exception:====>\n\n{}'.format(reason))
-                
+
         # send back unprocessed later
         if replays and queue_replay:
             Sqs(queue_replay).send_message_batch(replays)
