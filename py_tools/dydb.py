@@ -5,13 +5,12 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-import six
-from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
+from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute, DynamicMapAttribute as DMapAttribute
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
-
+from pynamodb.constants import NULL
 from py_tools import format
 
 
@@ -22,7 +21,7 @@ class ModelEncoder(format.ModelEncoder):
         return super(ModelEncoder, self).default(obj)
 
 
-class DynamicMapAttribute(MapAttribute):
+class DynamicMapAttribute(DMapAttribute):
     element_type = None
 
     def __init__(self, *args, of=None, **kwargs):
@@ -32,30 +31,28 @@ class DynamicMapAttribute(MapAttribute):
             self.element_type = of
         super(DynamicMapAttribute, self).__init__(*args, **kwargs)
 
-    def _set_attributes(self, **attributes):
-        """
-        Sets the attributes for this object
-        """
-        for attr_name, attr_value in six.iteritems(attributes):
-            setattr(self, attr_name, attr_value)
 
     def deserialize(self, values):
-        """
-        Decode from map of AttributeValue types.
-        """
         if not self.element_type:
             return super(DynamicMapAttribute, self).deserialize(values)
+        
+        element_attr = self.element_type()
+        if isinstance(element_attr, MapAttribute):
+            element_attr._make_attribute()  # ensure attr_name exists
+        
+        output = {}
 
-        class_for_deserialize = self.element_type()
-        return {
-            k: class_for_deserialize.deserialize(attr_value)
-            for k, v in values.items()
-            for _, attr_value in v.items()
-        }
+        for attr_name, attribute_value in values.items():
+            value = None
+            if NULL not in attribute_value:
+                element_attr.attr_name = '{}.{}'.format(self.attr_name, attr_name)
+                value = element_attr.deserialize(element_attr.get_value(attribute_value))
+                output[attr_name] = value   
+        return output
 
     @classmethod
     def is_raw(cls):
-        return cls == DynamicMapAttribute
+        return True
 
 
 class DbModel(Model):
@@ -184,8 +181,6 @@ class DbModel(Model):
             try:
                 actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
             except AttributeError as e:
-                if 'DynamicMapAttribute' not in str(e):
-                    raise
                 key = str(k.split('.')[-1])
                 k = k.replace('.' + key, '')
                 actions.append(operator.attrgetter(k)(cls)[key].set(v))

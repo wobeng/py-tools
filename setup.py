@@ -21,6 +21,6 @@ setup(
         'jwcrypto',
         'dotty-dict',
         'backoff',
-        'pynamodb @ git+https://github.com/pynamodb/PynamoDB#egg=pynamodb'
+        'pynamodb'
     ]
 )
