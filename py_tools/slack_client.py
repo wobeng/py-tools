@@ -5,6 +5,7 @@ import time
 from py_tools.format import dumps
 import backoff
 import tempfile
+import logging
 
 
 class Slack:
@@ -100,7 +101,7 @@ class Slack:
 
         return self.send_raw_message(blocks, thread_ts)
 
-    @backoff.on_exception(backoff.expo, errors.SlackApiError)
+    @backoff.on_exception(backoff.expo, errors.SlackApiError, backoff_log_level=logging.ERROR)
     def try_and_delete_message(self, message_ts, as_user=False):
         try:
             self.client.chat_delete(
