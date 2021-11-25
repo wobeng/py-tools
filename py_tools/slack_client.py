@@ -111,7 +111,7 @@ class Slack:
             )
         except errors.SlackApiError as e:
             if e.response.status_code == 429:
-                time.sleep(int(e.response.headers['Retry-After']))
+                time.sleep(int(e.response.headers.get('Retry-After','10')))
             if e.response['error'] == 'message_not_found':
                 return
             raise e
