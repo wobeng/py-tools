@@ -180,7 +180,7 @@ class DbModel(Model):
         for k, v in updates.items():
             try:
                 actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(k, str) else k.set(v)
-            except AttributeError as e:
+            except AttributeError:
                 key = str(k.split('.')[-1])
                 k = k.replace('.' + key, '')
                 actions.append(operator.attrgetter(k)(cls)[key].set(v))
