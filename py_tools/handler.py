@@ -60,16 +60,17 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
         for record in event['Records']:
 
             receive_count = 1
-            source_handler = record['eventSource'].split(
+            original_source_handler = record['eventSource'].split(
                 ':')[-1].lower()  # should be dynamodb, sqs or adhoc
+            source_handler = original_source_handler
 
             if queue_replay and source_handler == 'sqs':
                 if record['eventSourceARN'].split(':')[-1] == queue_replay:
                     receive_count = int(
                         record['messageAttributes']['receive_count']['stringValue'])
                     record = loads(record['body'])
-                    source_handler = record['eventSource'].split(
-                        ':')[-1].lower()  # should be dynamodb, sqs or adhoc
+                    source_handler = record.get('eventSource', 'aws:adhoc').split(
+                        ':')[-1].lower()  # should be dynamodb or sqs
             try:
                 method = getattr(
                     Handlers(file, record, context, record_wrapper, before_request), source_handler)
@@ -86,18 +87,18 @@ def aws_lambda_handler(file, record_wrapper=None, before_request=None, queue_rep
                         'receive_count': {'StringValue': str(receive_count  + 1), 'DataType': 'String'}
                     }
                 }
+                if source_handler != 'adhoc':
+                    if receive_count > 3:
+                        entry['MessageBody'] = dumps({
+                            'record': record,
+                            'reason': reason
+                            })
+                        kills.append(entry)
+                    else:
+                        entry['MessageBody'] = dumps(record)
+                        replays.append(entry)
+                    print('Receive Count:====>\n\n{}'.format(receive_count))
 
-                if receive_count > 3:
-                    entry['MessageBody'] = dumps({
-                        'record': record,
-                        'reason': reason
-                        })
-                    kills.append(entry)
-                else:
-                    entry['MessageBody'] = dumps(record)
-                    replays.append(entry)
-                
-                print('Receive Count:====>\n\n{}'.format(receive_count))
                 print('Unprocessed Record:====>\n\n{}'.format(dumps(record, indent=1)))
                 print('Exception:====>\n\n{}'.format(reason))
 
