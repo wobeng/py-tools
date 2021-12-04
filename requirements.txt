@@ -10,3 +10,4 @@ jwcrypto
 dotty-dict
 backoff
 pynamodb
+pre-commit
