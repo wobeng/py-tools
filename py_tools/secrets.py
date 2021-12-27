@@ -38,10 +38,11 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     return output
 
 
-def load_secret_manager(secret_names, names=None, load=True, secrets_client=secretsmanager):
+def load_secret_manager(secret_names, names=None, load=True, secrets_client=secretsmanager, force=False):
     secrets = {}
     for secret_name in secret_names.split(','):
-        secret = secrets_client.get_secret_value(SecretId=secret_name)['SecretString']
+        secret = secrets_client.get_secret_value(
+            SecretId=secret_name)['SecretString']
         secret = format.loads(secret)
         secrets.update(secret)
     if names:
@@ -49,7 +50,11 @@ def load_secret_manager(secret_names, names=None, load=True, secrets_client=secr
     if load:
         print('Adding secrets into env...')
         for key, value in secrets.items():
-            if key not in os.environ:
+            if force:
                 os.environ[key] = value
+            else:
+                if key not in os.environ:
+                    os.environ[key] = value
+
     secrets = {k: replace_value(v) for k, v in secrets.items()}
     return secrets
