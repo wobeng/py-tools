@@ -49,6 +49,8 @@ class Sqs:
         response = self.client.receive_message(
             QueueUrl=self.queue_url,
             MaxNumberOfMessages=limit,
+            AttributeNames=['All'],
+            MessageAttributeNames=['All'],
             **kwargs
         )
         return response
