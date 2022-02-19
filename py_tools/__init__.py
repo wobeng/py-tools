@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__title__ = 'py_tools'
-__version__ = '1.0.0'
-__license__ = 'Apache 2.0'
-__copyright__ = 'Copyright Welby Obeng 2017 - present'
-__url__ = 'https://github.com/wobeng/py-tools'
+__title__ = "py_tools"
+__version__ = "1.0.0"
+__license__ = "Apache 2.0"
+__copyright__ = "Copyright Welby Obeng 2017 - present"
+__url__ = "https://github.com/wobeng/py-tools"

@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute, DynamicMapAttribute
+from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
@@ -15,7 +15,7 @@ from py_tools import format
 
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
-        if hasattr(obj, 'attribute_values'):
+        if hasattr(obj, "attribute_values"):
             return obj.attribute_values
         return super(ModelEncoder, self).default(obj)
 
@@ -48,7 +48,8 @@ class DynamicMapAttribute(MapAttribute):
         class_for_deserialize = self.element_type()
         return {
             k: class_for_deserialize.deserialize(attr_value)
-            for k, v in values.items() for _, attr_value in v.items()
+            for k, v in values.items()
+            for _, attr_value in v.items()
         }
 
     @classmethod
@@ -102,10 +103,17 @@ class DbModel(Model):
         return output
 
     @classmethod
-    def get(cls, hash_key=None, range_key=None, consistent_read=False, attributes_to_get=None):
-        hash_key = hash_key or os.environ.get('HASH_KEY', None)
-        item = super(DbModel, cls).get(hash_key, range_key,
-                                       consistent_read, attributes_to_get)
+    def get(
+        cls,
+        hash_key=None,
+        range_key=None,
+        consistent_read=False,
+        attributes_to_get=None,
+    ):
+        hash_key = hash_key or os.environ.get("HASH_KEY", None)
+        item = super(DbModel, cls).get(
+            hash_key, range_key, consistent_read, attributes_to_get
+        )
         return item
 
     def save(self, condition=None, overwrite=False):
@@ -120,7 +128,9 @@ class DbModel(Model):
             self.add_db_conditions(self._hash_key.exists())
         if condition is not None:
             self.add_db_conditions(condition)
-        return super(DbModel, self).update(actions, DbModel._output_db_condition())
+        return super(DbModel, self).update(
+            actions, DbModel._output_db_condition()
+        )
 
     def delete(self, condition=None):
         self.add_db_conditions(self._hash_key.exists())
@@ -142,8 +152,8 @@ class DbModel(Model):
         cls_obj = cls.save_attributes(item, **kwargs)
         hash_key_name = cls_obj._hash_key.attr_name
         if hash_key_name not in item:
-            if 'HASH_KEY' in os.environ:
-                setattr(cls_obj, hash_key_name, os.environ['HASH_KEY'])
+            if "HASH_KEY" in os.environ:
+                setattr(cls_obj, hash_key_name, os.environ["HASH_KEY"])
         cls_obj.save(overwrite=overwrite)
         return cls_obj
 
@@ -162,18 +172,22 @@ class DbModel(Model):
         return attr.add(value)
 
     @classmethod
-    def append_or_prepend(cls, attr, value, choice='append'):
+    def append_or_prepend(cls, attr, value, choice="append"):
         """append_or_prepend to list"""
         if isinstance(attr, str):
             attr = operator.attrgetter(attr)(cls)
         return attr.set(getattr((attr | []), choice)(value))
 
     @classmethod
-    def update_attributes(cls, updates: Optional[Dict[Any, Any]] = None,
-                          deletes: Optional[Union[List[Any], Dict[Any, Any]]] = None,
-                          adds: Optional[Dict[Any, Any]] = None,
-                          appends: Optional[Dict[Any, Any]] = None, prepends: Optional[Dict[Any, Any]] = None,
-                          actions=None):
+    def update_attributes(
+        cls,
+        updates: Optional[Dict[Any, Any]] = None,
+        deletes: Optional[Union[List[Any], Dict[Any, Any]]] = None,
+        adds: Optional[Dict[Any, Any]] = None,
+        appends: Optional[Dict[Any, Any]] = None,
+        prepends: Optional[Dict[Any, Any]] = None,
+        actions=None,
+    ):
         updates = updates or {}
         adds = adds or {}
         appends = appends or {}
@@ -181,18 +195,19 @@ class DbModel(Model):
         actions = actions or []
         for k, v in updates.items():
             try:
-                actions.append(operator.attrgetter(k)(cls).set(
-                    v)) if isinstance(k, str) else k.set(v)
+                actions.append(
+                    operator.attrgetter(k)(cls).set(v)
+                ) if isinstance(k, str) else k.set(v)
             except AttributeError:
-                key = str(k.split('.')[-1])
-                k = k.replace('.' + key, '')
+                key = str(k.split(".")[-1])
+                k = k.replace("." + key, "")
                 actions.append(operator.attrgetter(k)(cls)[key].set(v))
         for k, v in adds.items():
             actions.append(cls.add(k, v))
         for k, v in appends.items():
             actions.append(cls.append_or_prepend(k, v))
         for k, v in prepends.items():
-            actions.append(cls.append_or_prepend(k, v, 'prepend'))
+            actions.append(cls.append_or_prepend(k, v, "prepend"))
         if deletes:
             if isinstance(deletes, dict):
                 for k, v in deletes.items():
@@ -204,56 +219,72 @@ class DbModel(Model):
         return actions
 
     @classmethod
-    def update_item(cls, hash_key=None, range_key=None,
-                    updates: Optional[Dict[Any, Any]] = None,
-                    deletes: Optional[List[Any]] = None, adds: Optional[Dict[Any, Any]] = None,
-                    appends: Optional[Dict[Any, Any]] = None,
-                    prepends: Optional[Dict[Any, Any]] = None,
-                    actions=None,  overwrite=False):
-        hash_key = hash_key or os.environ.get('HASH_KEY', None)
+    def update_item(
+        cls,
+        hash_key=None,
+        range_key=None,
+        updates: Optional[Dict[Any, Any]] = None,
+        deletes: Optional[List[Any]] = None,
+        adds: Optional[Dict[Any, Any]] = None,
+        appends: Optional[Dict[Any, Any]] = None,
+        prepends: Optional[Dict[Any, Any]] = None,
+        actions=None,
+        overwrite=False,
+    ):
+        hash_key = hash_key or os.environ.get("HASH_KEY", None)
         cls_obj = cls(hash_key, range_key)
-        cls_obj.update(cls.update_attributes(updates, deletes,
-                       adds, appends, prepends, actions), overwrite=overwrite)
+        cls_obj.update(
+            cls.update_attributes(
+                updates, deletes, adds, appends, prepends, actions
+            ),
+            overwrite=overwrite,
+        )
         return cls_obj
 
     @classmethod
     def delete_item(cls, hash_key=None, range_key=None):
-        hash_key = hash_key or os.environ.get('HASH_KEY', None)
+        hash_key = hash_key or os.environ.get("HASH_KEY", None)
         cls_obj = cls(hash_key, range_key)
         cls_obj.delete()
         return cls_obj
 
     @classmethod
-    def query(cls,
-              hash_key=None,
-              range_key_condition=None,
-              consistent_read=False,
-              index_name=None,
-              scan_index_forward=None,
-              conditional_operator=None,
-              limit=None,
-              last_evaluated_key=None,
-              attributes_to_get=None,
-              page_size=None,
-              rate_limit=None,
-              **filters):
-        hash_key = hash_key or os.environ.get('HASH_KEY', None)
+    def query(
+        cls,
+        hash_key=None,
+        range_key_condition=None,
+        consistent_read=False,
+        index_name=None,
+        scan_index_forward=None,
+        conditional_operator=None,
+        limit=None,
+        last_evaluated_key=None,
+        attributes_to_get=None,
+        page_size=None,
+        rate_limit=None,
+        **filters
+    ):
+        hash_key = hash_key or os.environ.get("HASH_KEY", None)
         items = super(DbModel, cls).query(
-            hash_key=hash_key, range_key_condition=range_key_condition,
+            hash_key=hash_key,
+            range_key_condition=range_key_condition,
             filter_condition=DbModel._output_db_condition(),
-            consistent_read=consistent_read, index_name=index_name,
-            scan_index_forward=scan_index_forward, limit=limit,
-            last_evaluated_key=last_evaluated_key, attributes_to_get=attributes_to_get,
-            page_size=page_size, rate_limit=rate_limit
+            consistent_read=consistent_read,
+            index_name=index_name,
+            scan_index_forward=scan_index_forward,
+            limit=limit,
+            last_evaluated_key=last_evaluated_key,
+            attributes_to_get=attributes_to_get,
+            page_size=page_size,
+            rate_limit=rate_limit,
         )
         return items
 
 
 class TransactWrite(_TransactWrite):
-
     def save(self, model, condition=None, return_values=None, **kwargs):
         key_name = model._hash_keyname
-        overwrite = kwargs.get('overwrite', False)
+        overwrite = kwargs.get("overwrite", False)
         hash_key = getattr(model.__class__, key_name)
         if not overwrite:
             model.add_db_conditions(hash_key.does_not_exist())
@@ -262,13 +293,15 @@ class TransactWrite(_TransactWrite):
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
-            if 'HASH_KEY' in os.environ:
-                setattr(model, key_name, os.environ['HASH_KEY'])
+            if "HASH_KEY" in os.environ:
+                setattr(model, key_name, os.environ["HASH_KEY"])
         return super(TransactWrite, self).save(model, condition, return_values)
 
-    def update(self, model, actions, condition=None, return_values=None, **kwargs):
+    def update(
+        self, model, actions, condition=None, return_values=None, **kwargs
+    ):
         key_name = model._hash_keyname
-        overwrite = kwargs.get('overwrite', False)
+        overwrite = kwargs.get("overwrite", False)
         hash_key = getattr(model.__class__, key_name)
         if not overwrite:
             model.add_db_conditions(hash_key.exists())
@@ -277,9 +310,11 @@ class TransactWrite(_TransactWrite):
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
-            if 'HASH_KEY' in os.environ:
-                setattr(model, key_name, os.environ['HASH_KEY'])
-        return super(TransactWrite, self).update(model, actions, condition, return_values)
+            if "HASH_KEY" in os.environ:
+                setattr(model, key_name, os.environ["HASH_KEY"])
+        return super(TransactWrite, self).update(
+            model, actions, condition, return_values
+        )
 
     def delete(self, model, condition=None, **kwargs):
         key_name = model._hash_keyname
@@ -290,6 +325,6 @@ class TransactWrite(_TransactWrite):
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
-            if 'HASH_KEY' in os.environ:
-                setattr(model, key_name, os.environ['HASH_KEY'])
+            if "HASH_KEY" in os.environ:
+                setattr(model, key_name, os.environ["HASH_KEY"])
         super(TransactWrite, self).delete(model, condition)

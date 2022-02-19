@@ -9,7 +9,9 @@ import json
 
 
 class Handlers:
-    def __init__(self, file, record, context, record_wrapper=None, before_request=None):
+    def __init__(
+        self, file, record, context, record_wrapper=None, before_request=None
+    ):
         self.file = file
         self.record = record
         self.context = context
@@ -21,27 +23,30 @@ class Handlers:
         wrapper = self.record_wrapper or StreamRecord
         record = wrapper(self.record)
         m = self.module_handler(
-            self.file, record.trigger_module, folder='dynamodb')
+            self.file, record.trigger_module, folder="dynamodb"
+        )
         functions = getattr(m, record.event_name, [])
         for function in functions:
             function(record, self.context)
         return
 
     def sqs(self):
-        module_name = self.record['eventSourceARN'].split(
-            ':')[-1].replace('.fifo', '')
-        m = self.module_handler(self.file, module_name, folder='sqs')
-        return m.handler(loads(self.record['body']), self.record)
+        module_name = (
+            self.record["eventSourceARN"].split(":")[-1].replace(".fifo", "")
+        )
+        m = self.module_handler(self.file, module_name, folder="sqs")
+        return m.handler(loads(self.record["body"]), self.record)
 
     def adhoc(self):
-        m = self.module_handler(self.file, self.record['type'], folder='adhoc')
+        m = self.module_handler(self.file, self.record["type"], folder="adhoc")
         return m.handler(self.record)
 
     @staticmethod
-    def module_handler(file, module_name, folder='sqs'):
-        path = os.path.dirname(os.path.realpath(file)) + \
-            '/{}/{}.py'.format(folder, module_name)
-        name = path.split('/')[-1].replace('.py', '')
+    def module_handler(file, module_name, folder="sqs"):
+        path = os.path.dirname(os.path.realpath(file)) + "/{}/{}.py".format(
+            folder, module_name
+        )
+        name = path.split("/")[-1].replace(".py", "")
         spec = importlib.util.spec_from_file_location(name, path)
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
@@ -49,31 +54,35 @@ class Handlers:
 
 
 class InPost:
-
     @staticmethod
     def generate_attributes(record):
         receive_count = 1
-        source_handler = record['eventSource'].split(
-            ':')[-1].lower()  # should be dynamodb, sqs or adhoc
-        return receive_count,  source_handler
+        source_handler = (
+            record["eventSource"].split(":")[-1].lower()
+        )  # should be dynamodb, sqs or adhoc
+        return receive_count, source_handler
 
     @staticmethod
     def generate_replay_attributes(record):
         receive_count = int(
-            record['messageAttributes']['receive_count']['stringValue'])
-        record = loads(record['body'])
-        source_handler = record.get('eventSource', 'aws:adhoc').split(
-            ':')[-1].lower()  # should be dynamodb or sqs
-        return receive_count,  source_handler, record
+            record["messageAttributes"]["receive_count"]["stringValue"]
+        )
+        record = loads(record["body"])
+        source_handler = (
+            record.get("eventSource", "aws:adhoc").split(":")[-1].lower()
+        )  # should be dynamodb or sqs
+        return receive_count, source_handler, record
 
     @staticmethod
     def generate_dead_attributes(record):
         receive_count = int(
-            record['messageAttributes']['receive_count']['stringValue'])
-        record = loads(record['body'])['record']
-        source_handler = record.get('eventSource', 'aws:adhoc').split(
-            ':')[-1].lower()  # should be dynamodb or sqs
-        return receive_count,  source_handler, record
+            record["messageAttributes"]["receive_count"]["stringValue"]
+        )
+        record = loads(record["body"])["record"]
+        source_handler = (
+            record.get("eventSource", "aws:adhoc").split(":")[-1].lower()
+        )  # should be dynamodb or sqs
+        return receive_count, source_handler, record
 
 
 class OutPost:
@@ -95,27 +104,32 @@ class OutPost:
         cls.kills.append(output)
 
     @classmethod
-    def process_failed(cls, name, record, source_handler, receive_count, reason):
+    def process_failed(
+        cls, name, record, source_handler, receive_count, reason
+    ):
         uid = str(uuid4())
         entry = {
-            'Id': uid,
-            'MessageGroupId': name or source_handler,
-            'MessageDeduplicationId': uid,
-            'MessageAttributes': {
-                'source': {'StringValue': source_handler, 'DataType': 'String'},
-                'receive_count': {'StringValue': str(receive_count + 1), 'DataType': 'String'}
-            }
+            "Id": uid,
+            "MessageGroupId": name or source_handler,
+            "MessageDeduplicationId": uid,
+            "MessageAttributes": {
+                "source": {
+                    "StringValue": source_handler,
+                    "DataType": "String",
+                },
+                "receive_count": {
+                    "StringValue": str(receive_count + 1),
+                    "DataType": "String",
+                },
+            },
         }
         if receive_count > cls.max_receive_count:
-            entry['MessageBody'] = dumps({
-                'record': record,
-                'reason': reason
-            })
+            entry["MessageBody"] = dumps({"record": record, "reason": reason})
             cls.add_kills(entry)
         else:
-            entry['MessageBody'] = dumps(record)
+            entry["MessageBody"] = dumps(record)
             cls.add_replays(entry)
-        print('Receive Count:====>\n\n{}'.format(receive_count))
+        print("Receive Count:====>\n\n{}".format(receive_count))
 
     @classmethod
     def ship(cls, queue_replay=None, queue_dead=None):
@@ -130,57 +144,76 @@ class OutPost:
 def process_queue_dead(handler, queue_dead):
     sqs = Sqs(queue_dead)
     messages = sqs.receive_messages(
-        limit=1, WaitTimeSeconds=20, VisibilityTimeout=5)
-    if 'Messages' in messages:
-        message = messages['Messages'][0]
-        body = json.loads(message['Body'])['record']
-        output = handler({'Records': [body]}, None)
-        sqs.delete_message(message['ReceiptHandle'])
+        limit=1, WaitTimeSeconds=20, VisibilityTimeout=5
+    )
+    if "Messages" in messages:
+        message = messages["Messages"][0]
+        body = json.loads(message["Body"])["record"]
+        output = handler({"Records": [body]}, None)
+        sqs.delete_message(message["ReceiptHandle"])
         return output[0]
 
 
-def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None, queue_replay=None, queue_dead=None):
+def aws_lambda_handler(
+    file,
+    name=None,
+    record_wrapper=None,
+    before_request=None,
+    queue_replay=None,
+    queue_dead=None,
+):
     def handler(event, context):
         many = True
 
-        if 'Records' not in event:
+        if "Records" not in event:
             many = False
-            event.setdefault('eventSource', 'aws:adhoc')
-            event = {'Records': [event]}
+            event.setdefault("eventSource", "aws:adhoc")
+            event = {"Records": [event]}
 
-        for record in event['Records']:
+        for record in event["Records"]:
 
             receive_count, source_handler = InPost.generate_attributes(record)
 
-            if source_handler == 'sqs':
-                queue_name = record['eventSourceARN'].split(':')[-1]
+            if source_handler == "sqs":
+                queue_name = record["eventSourceARN"].split(":")[-1]
 
                 # load orignal event attrs
                 if queue_replay and queue_name == queue_replay:
-                    receive_count, source_handler, record = InPost.generate_replay_attributes(
-                        record)
+                    (
+                        receive_count,
+                        source_handler,
+                        record,
+                    ) = InPost.generate_replay_attributes(record)
 
                 if queue_dead and queue_name == queue_dead:
-                    receive_count, source_handler, record = InPost.generate_dead_attributes(
-                        record)
+                    (
+                        receive_count,
+                        source_handler,
+                        record,
+                    ) = InPost.generate_dead_attributes(record)
 
             try:
 
                 handler_cls = Handlers(
-                    file, record, context, record_wrapper, before_request)
+                    file, record, context, record_wrapper, before_request
+                )
                 method = getattr(handler_cls, source_handler)
                 OutPost.add_processed(method())  # run and add to process list
 
             except BaseException:
                 reason = traceback.format_exc()
 
-                if source_handler != 'adhoc':
+                if source_handler != "adhoc":
                     OutPost.process_failed(
-                        name, record, source_handler, receive_count, reason)
+                        name, record, source_handler, receive_count, reason
+                    )
 
-                print('Unprocessed Record:====>\n\n{}'.format(
-                    dumps(record, indent=1)))
-                print('Exception:====>\n\n{}'.format(reason))
+                print(
+                    "Unprocessed Record:====>\n\n{}".format(
+                        dumps(record, indent=1)
+                    )
+                )
+                print("Exception:====>\n\n{}".format(reason))
 
         # send back unprocessed later and kill repetitive errors
         OutPost.ship(queue_replay, queue_dead)

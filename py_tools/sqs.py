@@ -4,7 +4,7 @@ import boto3
 
 from py_tools import format
 
-sqs = boto3.client('sqs')
+sqs = boto3.client("sqs")
 
 
 class Sqs:
@@ -12,36 +12,37 @@ class Sqs:
         self.client = sqs
         self.queue_url = queue_url
         if queue_name:
-            self.queue_url = self.client.get_queue_url(QueueName=queue_name)['QueueUrl']
+            self.queue_url = self.client.get_queue_url(QueueName=queue_name)[
+                "QueueUrl"
+            ]
 
     def _run_batch(self, entries, function_name):
         n = 10
-        new_entries = [entries[i * n:(i + 1) * n] for i in range((len(entries) + n - 1) // n)]
+        new_entries = [
+            entries[i * n : (i + 1) * n]
+            for i in range((len(entries) + n - 1) // n)
+        ]
 
         for ne in new_entries:
             ne_copy = ne.copy()
             get_out = False
             while not get_out:
                 response = getattr(self.client, function_name)(
-                    QueueUrl=self.queue_url,
-                    Entries=ne_copy
+                    QueueUrl=self.queue_url, Entries=ne_copy
                 )
-                if response.get('Failed', None):
-                    failed_ids = [f['Id'] for f in response['Failed']]
-                    ne_copy = [e for e in ne if e['Id'] in failed_ids]
+                if response.get("Failed", None):
+                    failed_ids = [f["Id"] for f in response["Failed"]]
+                    ne_copy = [e for e in ne if e["Id"] in failed_ids]
                 else:
                     get_out = True
 
     def purge(self):
-        response = self.client.purge_queue(
-            QueueUrl=self.queue_url
-        )
+        response = self.client.purge_queue(QueueUrl=self.queue_url)
         return response
 
     def delete_message(self, receipt_handle):
         response = self.client.delete_message(
-            QueueUrl=self.queue_url,
-            ReceiptHandle=receipt_handle
+            QueueUrl=self.queue_url, ReceiptHandle=receipt_handle
         )
         return response
 
@@ -49,8 +50,8 @@ class Sqs:
         response = self.client.receive_message(
             QueueUrl=self.queue_url,
             MaxNumberOfMessages=limit,
-            AttributeNames=['All'],
-            MessageAttributeNames=['All'],
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
             **kwargs
         )
         return response
@@ -64,36 +65,34 @@ class Sqs:
         return response
 
     def send_message_batch(self, entries):
-        return self._run_batch(entries, 'send_message_batch')
+        return self._run_batch(entries, "send_message_batch")
 
     def delete_message_batch(self, entries):
-        return self._run_batch(entries, 'delete_message_batch')
+        return self._run_batch(entries, "delete_message_batch")
 
     def send_back_unprocessed(self, unprocessed, delay=300):
         entries = []
         message_attrs_keys = {
-            'stringValue': 'StringValue',
-            'binaryValue': 'BinaryValue',
-            'dataType': 'DataType'
-
+            "stringValue": "StringValue",
+            "binaryValue": "BinaryValue",
+            "dataType": "DataType",
         }
         for record in unprocessed:
-            entry = {
-                'MessageBody': record['body'],
-                'Id': str(uuid4())
-            }
-            if 'messageAttributes' in record:
+            entry = {"MessageBody": record["body"], "Id": str(uuid4())}
+            if "messageAttributes" in record:
                 attrs = {}
-                for k, v in record['messageAttributes'].items():
+                for k, v in record["messageAttributes"].items():
                     attr_values = {}
                     for x, y in v.items():
                         if x in message_attrs_keys:
                             attr_values[message_attrs_keys[x]] = y
                     attrs[k] = attr_values
-                entry['MessageAttributes'] = attrs
-            if 'MessageGroupId' in record['attributes']:
-                entry['MessageGroupId'] = record['attributes']['MessageGroupId']
+                entry["MessageAttributes"] = attrs
+            if "MessageGroupId" in record["attributes"]:
+                entry["MessageGroupId"] = record["attributes"][
+                    "MessageGroupId"
+                ]
             else:
-                entry['DelaySeconds'] = delay
+                entry["DelaySeconds"] = delay
             entries.append(entry)
         self.send_message_batch(entries)

@@ -18,7 +18,7 @@ def loads(*args, **kwargs):
 
 
 def dumps(*args, **kwargs):
-    kwargs['cls'] = kwargs.get('cls', ModelEncoder)
+    kwargs["cls"] = kwargs.get("cls", ModelEncoder)
     return simplejson.dumps(*args, **kwargs)
 
 
@@ -27,11 +27,13 @@ def clean_empty(d):
         return d
     if isinstance(d, list):
         return [v for v in (clean_empty(v) for v in d) if v]
-    return {k: v for k, v in ((k, clean_empty(v)) for k, v in d.items()) if v != ''}
+    return {
+        k: v for k, v in ((k, clean_empty(v)) for k, v in d.items()) if v != ""
+    }
 
 
 class FormatData:
-    def __init__(self, item, separator='.'):
+    def __init__(self, item, separator="."):
         self.output = {}
         self.separator = separator
         self.item = Dotty(item, self.separator)
@@ -39,8 +41,8 @@ class FormatData:
     def inc(self, keys, skip_missing=True):
         output = Dotty({}, self.separator)
         for k in keys:
-            value = self.item.get(k, default='_missing')
-            if skip_missing and value == '_missing':
+            value = self.item.get(k, default="_missing")
+            if skip_missing and value == "_missing":
                 continue
             output[k] = value
         return dict(output)

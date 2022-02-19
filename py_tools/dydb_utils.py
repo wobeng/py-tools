@@ -10,7 +10,7 @@ def get_all_items(table, attributes_to_get=None):
     while True:
         results = table.scan(
             last_evaluated_key=last_evaluated_key,
-            attributes_to_get=attributes_to_get
+            attributes_to_get=attributes_to_get,
         )
         for item in results:
             items.append(item)
@@ -24,7 +24,6 @@ def get_all_items(table, attributes_to_get=None):
 
 
 class StreamRecord:
-
     @staticmethod
     def deserialize_output(value):
         try:
@@ -46,13 +45,19 @@ class StreamRecord:
         return value
 
     def __init__(self, record):
-        self.key = self.deserialize_output(record['dynamodb']['Keys'])
-        self.new_image = self.deserialize_output(record['dynamodb'].get('NewImage', {}))
-        self.old_image = self.deserialize_output(record['dynamodb'].get('OldImage', {}))
-        self.event_name = record['eventName'].lower()
-        self.table_name = record['eventSourceARN'].split('/')[-3]
-        self.trigger_module = '_'.join(re.findall('[A-Z][^A-Z]*', self.table_name)).lower()
-        if record.get('userIdentity', {}).get('type', '') == 'Service':
+        self.key = self.deserialize_output(record["dynamodb"]["Keys"])
+        self.new_image = self.deserialize_output(
+            record["dynamodb"].get("NewImage", {})
+        )
+        self.old_image = self.deserialize_output(
+            record["dynamodb"].get("OldImage", {})
+        )
+        self.event_name = record["eventName"].lower()
+        self.table_name = record["eventSourceARN"].split("/")[-3]
+        self.trigger_module = "_".join(
+            re.findall("[A-Z][^A-Z]*", self.table_name)
+        ).lower()
+        if record.get("userIdentity", {}).get("type", "") == "Service":
             self.ttl = True
         else:
             self.ttl = False

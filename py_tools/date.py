@@ -10,13 +10,13 @@ def datetime_utc(dt=None):
     return dt.replace(tzinfo=UTC)
 
 
-def date_id(prefix=''):
+def date_id(prefix=""):
     def call(pre=prefix):
-        suf = datetime_utc().replace(tzinfo=None).isoformat().replace('.', ':')
-        suf = suf + '_' + str(uuid.uuid4())
+        suf = datetime_utc().replace(tzinfo=None).isoformat().replace(".", ":")
+        suf = suf + "_" + str(uuid.uuid4())
         suf = suf or suf
         if pre:
-            pre = pre + '::'
+            pre = pre + "::"
         return pre + suf
 
     return call
