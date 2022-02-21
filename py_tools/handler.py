@@ -198,7 +198,10 @@ def aws_lambda_handler(
                     file, record, context, record_wrapper, before_request
                 )
                 method = getattr(handler_cls, source_handler)
-                OutPost.add_processed(method())  # run and add to process list
+                # run handler function
+                output = method()
+                # add to process list
+                OutPost.add_processed(output)
 
             except BaseException:
                 reason = traceback.format_exc()
