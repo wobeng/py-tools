@@ -63,7 +63,7 @@ def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_reque
                 ReplayBin.update_item(
                     hash_key=name,
                     range_key=item["replay_id"],
-                    adds={"receive_count": 1}
+                    adds={"run_count": 1}
                 )
             else:
                 ReplayBin.delete_item(
