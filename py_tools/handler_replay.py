@@ -16,7 +16,7 @@ class ReplayBin(DbModel):
     replay_id = UnicodeAttribute(
         default_for_new=date_id(nickname), range_key=True
     )
-    receive_count = NumberAttribute()
+    receive_count = NumberAttribute(default=0)
     record = MapAttribute()
     reason = UnicodeAttribute()
 
