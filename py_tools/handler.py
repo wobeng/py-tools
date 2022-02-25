@@ -55,24 +55,30 @@ class OutPost:
     processed = []
     many = True
 
-    @classmethod
-    def add_processed(cls, output):
-        cls.processed.append(output)
+    def __init__(self, many=True):
+        self.replays = []
+        self.processed = []
+        self.many = many
 
-    @classmethod
-    def add_replays(cls, output):
-        cls.replays.append(output)
+    def __call__(self, many):
+        if many:
+            self.many = many
 
-    @classmethod
+    def add_processed(self, output):
+        self.processed.append(output)
+
+    def add_replays(self, output):
+        self.replays.append(output)
+
     def process_failed(
-        cls, name, record, reason
+        self, name, record, reason
     ):
         entry = {
             "bin": name,
             "record": record,
             "reason": reason
         }
-        cls.add_replays(entry)
+        self.add_replays(entry)
 
 
 def aws_lambda_handler(
@@ -82,9 +88,10 @@ def aws_lambda_handler(
     before_request=None
 ):
     def handler(event, context):
+        outpost = OutPost()
 
         if "Records" not in event:
-            OutPost.many = False
+            outpost(many=False)
             event.setdefault("eventSource", "aws:adhoc")
             event = {"Records": [event]}
 
@@ -97,17 +104,18 @@ def aws_lambda_handler(
                 handler_cls = Handlers(
                     file, record, context, record_wrapper, before_request
                 )
+
                 method = getattr(handler_cls, source_handler)
                 # run handler function
                 output = method()
                 # add to process list
-                OutPost.add_processed(output)
+                outpost.add_processed(output)
 
             except BaseException:
                 reason = traceback.format_exc()
 
                 if source_handler != "adhoc":
-                    OutPost.process_failed(name, record, reason)
+                    outpost.process_failed(name, record, reason)
 
                 print(
                     "Unprocessed Record:====>\n\n{}".format(
@@ -116,6 +124,6 @@ def aws_lambda_handler(
                 )
                 print("Exception:====>\n\n{}".format(reason))
 
-        return OutPost
+        return outpost
 
     return handler

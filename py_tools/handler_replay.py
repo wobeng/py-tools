@@ -27,11 +27,9 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None
 ):
-    main_handler = main_aws_lambda_handler(
-        file, name, record_wrapper, before_request)
-
-    def handler(event, context):
-        outpost = main_handler(event, context)
+    def wrapper(event, context):
+        outpost = main_aws_lambda_handler(
+            file, name, record_wrapper, before_request)(event, context)
 
         # add to replay table
         if outpost.replays:
@@ -44,20 +42,20 @@ def aws_lambda_handler(
 
         return outpost.processed if outpost.many else outpost.processed[0]
 
-    return handler
+    return wrapper
 
 
 def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_request=None):
-    file = file.replace("/adhoc/", "/")
-    main_handler = main_aws_lambda_handler(
-        file, name, record_wrapper, before_request)
 
-    def handler(event=None, context=None):
-        print("Starting replay handler ...")
+    file = file.replace("/adhoc/", "/")
+
+    def wrapper(event=None, context=None):
+
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
 
-            outpost = main_handler(item["record"], context)
+            outpost = main_aws_lambda_handler(
+                file, name, record_wrapper, before_request)(item["record"], context)
 
             if outpost.replays:
                 ReplayBin.update_item(
@@ -65,9 +63,10 @@ def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_reque
                     range_key=item["replay_id"],
                     adds={"run_count": 1}
                 )
+                return  # return early for events to process in order
             else:
                 ReplayBin.delete_item(
                     hash_key=name,
                     range_key=item["replay_id"]
                 )
-    return handler
+    return wrapper
