@@ -16,7 +16,7 @@ class ReplayBin(DbModel):
     replay_id = UnicodeAttribute(
         default_for_new=date_id(nickname), range_key=True
     )
-    receive_count = NumberAttribute(default=0)
+    run_count = NumberAttribute(default=1)
     record = MapAttribute()
     reason = UnicodeAttribute()
 
@@ -34,9 +34,10 @@ def aws_lambda_handler(
         outpost = main_handler(event, context)
 
         # add to replay table
-        with ReplayBin.batch_write() as batch:
-            for item in outpost.replays:
-                batch.save(ReplayBin.save_attributes(item))
+        if outpost.replays:
+            with ReplayBin.batch_write() as batch:
+                for item in outpost.replays:
+                    batch.save(ReplayBin.save_attributes(item))
 
         if not outpost.processed:
             return
@@ -52,6 +53,7 @@ def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_reque
         file, name, record_wrapper, before_request)
 
     def handler(event=None, context=None):
+        print("Starting replay handler ...")
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
 
