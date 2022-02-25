@@ -27,9 +27,11 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None
 ):
+    main_handler = main_aws_lambda_handler(
+        file, name, record_wrapper, before_request)
+
     def handler(event, context):
-        outpost = main_aws_lambda_handler(
-            file, name, record_wrapper, before_request)
+        outpost = main_handler(event, context)
 
         # add to replay table
         with ReplayBin.batch_write() as batch:
