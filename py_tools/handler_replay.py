@@ -47,6 +47,7 @@ def aws_lambda_handler(
 
 
 def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_request=None):
+    file = file.replace("/adhoc/", "/")
     main_handler = main_aws_lambda_handler(
         file, name, record_wrapper, before_request)
 
@@ -59,12 +60,12 @@ def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_reque
             if outpost.replays:
                 ReplayBin.update_item(
                     hash_key=name,
-                    range_key=item.replay_id,
+                    range_key=item["replay_id"],
                     adds={"receive_count": 1}
                 )
             else:
                 ReplayBin.delete_item(
                     hash_key=name,
-                    range_key=item.replay_id
+                    range_key=item["replay_id"]
                 )
     return handler
