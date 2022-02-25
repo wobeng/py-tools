@@ -36,7 +36,7 @@ def aws_lambda_handler(
         # add to replay table
         with ReplayBin.batch_write() as batch:
             for item in outpost.replays:
-                batch.save(item)
+                batch.save(ReplayBin.save_attributes(item))
 
         if not outpost.processed:
             return
