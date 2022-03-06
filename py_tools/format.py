@@ -2,6 +2,7 @@ from datetime import datetime
 
 import simplejson
 from dotty_dict import Dotty
+import decimal
 
 
 class ModelEncoder(simplejson.JSONEncoder):
@@ -10,6 +11,8 @@ class ModelEncoder(simplejson.JSONEncoder):
             return obj.isoformat()
         elif isinstance(obj, set):
             return list(obj)
+        elif isinstance(obj, decimal.Decimal):
+            return str(obj)
         return simplejson.JSONEncoder.default(self, obj)
 
 
