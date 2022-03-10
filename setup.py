@@ -22,5 +22,6 @@ setup(
         "dotty-dict",
         "backoff",
         "pynamodb",
+        "bcrypt"
     ],
 )

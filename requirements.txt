@@ -11,3 +11,4 @@ dotty-dict
 backoff
 pynamodb
 pre-commit
+bcrypt
