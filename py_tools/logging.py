@@ -17,11 +17,15 @@ def get_file_handler(name):
     return file_handler
 
 
-def get_logger(logger_name, logger_level=logging.DEBUG):
+def get_logger(
+    logger_name, logger_level=logging.DEBUG, log_console=False, log_file=True
+):
     logger = logging.getLogger(logger_name)
     if not logger.hasHandlers():
         logger.setLevel(logger_level)
-        # logger.addHandler(get_console_handler())
-        logger.addHandler(get_file_handler(logger_name + ".log"))
+        if log_console:
+            logger.addHandler(get_console_handler())
+        if log_file:
+            logger.addHandler(get_file_handler(logger_name + ".log"))
         logger.propagate = False
     return logger

@@ -7,11 +7,13 @@ import backoff
 import tempfile
 import logging
 
+from py_tools.logging import get_logger
+
+pytest_logger = get_logger("pytest", log_console=True, log_file=False)
+
 
 class Slack:
-    def __init__(
-        self, bot_token, channel_name=None, channel_id=None, user_token=None
-    ):
+    def __init__(self, bot_token, channel_name=None, channel_id=None, user_token=None):
         self.client = WebClient(bot_token)
         self.channel_id = channel_id
         self.user_token = user_token
@@ -29,9 +31,7 @@ class Slack:
                 for u in self.client.users_list()["members"]
                 if u.get("is_admin") or u.get("is_owner")
             ]
-            self.client.conversations_invite(
-                channel=self.channel_id, users=admins
-            )
+            self.client.conversations_invite(channel=self.channel_id, users=admins)
 
     def get_channel_id(self, name):
         channels = self.client.conversations_list(
@@ -57,9 +57,7 @@ class Slack:
                 thread_ts=thread_ts,
             )["ts"]
 
-    def send_exception_snippet(
-        self, domain, event, code_type="python", thread_ts=None
-    ):
+    def send_exception_snippet(self, domain, event, code_type="python", thread_ts=None):
         message = traceback.format_exc() + "\n\n\n" + dumps(event, indent=2)
         subject = "Error occurred in " + domain
         self.send_snippet(
@@ -75,9 +73,9 @@ class Slack:
         self.client.chat_update(channel=self.channel_id, blocks=blocks, ts=ts)
 
     def get_perm_link(self, ts):
-        return self.client.chat_getPermalink(
-            channel=self.channel_id, message_ts=ts
-        )["permalink"]
+        return self.client.chat_getPermalink(channel=self.channel_id, message_ts=ts)[
+            "permalink"
+        ]
 
     def send_message(self, message, attachment=None, thread_ts=None):
         blocks = [
@@ -119,8 +117,8 @@ class Slack:
             raise e
 
         except BaseException:
-            print("Error messages from slack")
-            traceback.print_exc()
+            pytest_logger.debug("Error messages from slack")
+            pytest_logger.debug(traceback.print_exc())
 
     def delete_message(self, slack_messages):
         as_user = False

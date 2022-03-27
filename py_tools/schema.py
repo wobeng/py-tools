@@ -11,21 +11,15 @@ def validate_schema_data(incoming_data, json_schema):
 
 
 def validate_pages_schema_data(incoming_data, json_schema):
-    page_schema = []
-    page_content = []
     page_errors = []
     for index, page in enumerate(incoming_data):
         page = format.clean_empty(page)
         try:
             Draft7Validator(json_schema[index]["schema"]).validate(page)
-            page_content.append(page)
-            page_schema.append(json_schema[index]["schema"])
         except BaseException as e:
-            msg = "{}.{}:{}".format(
-                index, ".".join(e.absolute_schema_path), e.message
-            )
+            msg = "{}.{}:{}".format(index, ".".join(e.absolute_schema_path), e.message)
             page_errors.append(msg)
 
     if page_errors:
         raise Exception(",".join(page_errors))
-    return {"page_content": page_content, "page_schema": page_schema}
+    return {"page_content": incoming_data, "page_schema": json_schema}

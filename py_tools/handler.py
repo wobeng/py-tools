@@ -3,12 +3,13 @@ import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
 from py_tools.format import loads, dumps
+from py_tools.logging import get_logger
+
+pytest_logger = get_logger("pytest", log_console=True, log_file=False)
 
 
 class Handlers:
-    def __init__(
-        self, file, record, context, record_wrapper=None, before_request=None
-    ):
+    def __init__(self, file, record, context, record_wrapper=None, before_request=None):
         self.file = file
         self.record = record
         self.context = context
@@ -19,18 +20,14 @@ class Handlers:
     def dynamodb(self):
         wrapper = self.record_wrapper or StreamRecord
         record = wrapper(self.record)
-        m = self.module_handler(
-            self.file, record.trigger_module, folder="dynamodb"
-        )
+        m = self.module_handler(self.file, record.trigger_module, folder="dynamodb")
         functions = getattr(m, record.event_name, [])
         for function in functions:
             function(record, self.context)
         return
 
     def sqs(self):
-        module_name = (
-            self.record["eventSourceARN"].split(":")[-1].replace(".fifo", "")
-        )
+        module_name = self.record["eventSourceARN"].split(":")[-1].replace(".fifo", "")
         m = self.module_handler(self.file, module_name, folder="sqs")
         return m.handler(loads(self.record["body"]), self.record)
 
@@ -70,23 +67,12 @@ class OutPost:
     def add_replays(self, output):
         self.replays.append(output)
 
-    def process_failed(
-        self, name, record, reason
-    ):
-        entry = {
-            "bin": name,
-            "record": record,
-            "reason": reason
-        }
+    def process_failed(self, name, record, reason):
+        entry = {"bin": name, "record": record, "reason": reason}
         self.add_replays(entry)
 
 
-def aws_lambda_handler(
-    file,
-    name=None,
-    record_wrapper=None,
-    before_request=None
-):
+def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None):
     def handler(event, context):
         outpost = OutPost()
 
@@ -117,12 +103,10 @@ def aws_lambda_handler(
                 if source_handler != "adhoc":
                     outpost.process_failed(name, record, reason)
 
-                print(
-                    "Unprocessed Record:====>\n\n{}".format(
-                        dumps(record, indent=1)
-                    )
+                pytest_logger.debug(
+                    "Unprocessed Record:====>%s", dumps(record, indent=1)
                 )
-                print("Exception:====>\n\n{}".format(reason))
+                pytest_logger.debug("Exception:====>%s", reason)
 
         return outpost
 
