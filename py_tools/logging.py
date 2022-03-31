@@ -18,14 +18,14 @@ def get_file_handler(name):
 
 
 def get_logger(
-    logger_name, logger_level=logging.DEBUG, log_console=False, log_file=True
+    logger_name=None, logger_level=logging.DEBUG, log_console=False, log_file=True
 ):
     logger = logging.getLogger(logger_name)
+    logger.setLevel(logger_level)
+    logger.propagate = True if not log_file else False
     if not logger.hasHandlers():
-        logger.setLevel(logger_level)
         if log_console:
             logger.addHandler(get_console_handler())
         if log_file:
             logger.addHandler(get_file_handler(logger_name + ".log"))
-        logger.propagate = False
     return logger
