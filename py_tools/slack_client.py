@@ -102,7 +102,7 @@ class Slack:
         return self.send_raw_message(blocks, thread_ts)
 
     @backoff.on_exception(
-        backoff.expo, errors.SlackApiError, backoff_log_level=logging.ERROR
+        backoff.expo, errors.SlackApiError
     )
     def try_and_delete_message(self, message_ts, as_user=False):
         try:
