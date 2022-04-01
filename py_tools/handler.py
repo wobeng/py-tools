@@ -3,7 +3,7 @@ import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
 from py_tools.format import loads, dumps
-from py_tools.logging import get_logger
+from py_tools.pylog import get_logger
 
 pytest_logger = get_logger("pytest", log_console=True, log_file=False)
 
@@ -54,8 +54,7 @@ class OutPost:
         self.many = many
 
     def __call__(self, many):
-        if many:
-            self.many = many
+        self.many = many
         return self
 
     def add_processed(self, output):

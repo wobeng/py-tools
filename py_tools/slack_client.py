@@ -7,7 +7,7 @@ import backoff
 import tempfile
 import logging
 
-from py_tools.logging import get_logger
+from py_tools.pylog import get_logger
 
 pytest_logger = get_logger("pytest", log_console=True, log_file=False)
 

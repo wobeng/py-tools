@@ -3,7 +3,7 @@ import os
 import boto3
 
 from py_tools import format
-from py_tools.logging import get_logger
+from py_tools.pylog import get_logger
 
 ssm = boto3.client("ssm")
 secretsmanager = boto3.client("secretsmanager")
