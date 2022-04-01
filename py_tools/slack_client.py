@@ -5,7 +5,6 @@ import time
 from py_tools.format import dumps
 import backoff
 import tempfile
-import logging
 
 from py_tools.pylog import get_logger
 
