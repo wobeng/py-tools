@@ -60,6 +60,7 @@ class OutPost:
     def __call__(self, many):
         if many:
             self.many = many
+        return self
 
     def add_processed(self, output):
         self.processed.append(output)
