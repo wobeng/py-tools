@@ -48,10 +48,6 @@ class Handlers:
 
 
 class OutPost:
-    replays = []
-    processed = []
-    many = True
-
     def __init__(self, many=True):
         self.replays = []
         self.processed = []
