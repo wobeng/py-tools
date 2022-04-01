@@ -3,12 +3,9 @@ import os
 import boto3
 
 from py_tools import format
-from py_tools.pylog import get_logger
 
 ssm = boto3.client("ssm")
 secretsmanager = boto3.client("secretsmanager")
-
-pytest_logger = get_logger("pytest", log_console=True, log_file=False)
 
 
 def replace_value(value):
@@ -28,7 +25,6 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     for parameter in response["Parameters"]:
         output[parameter["Name"].split("/")[-1]] = parameter["Value"]
     if load:
-        pytest_logger.debug("Adding parameters into env...")
         for k, v in output.items():
             os.environ[k] = v
     output = {k: replace_value(v) for k, v in output.items()}
@@ -50,7 +46,6 @@ def load_secret_manager(
     if names:
         secrets = {k: v for k, v in secrets.items() if k in names}
     if load:
-        pytest_logger.debug("Adding secrets into env...")
         for key, value in secrets.items():
             if force:
                 os.environ[key] = value
