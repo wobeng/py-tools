@@ -8,7 +8,7 @@ import tempfile
 
 from py_tools.pylog import get_logger
 
-pytest_logger = get_logger("pytest", log_console=True, log_file=False)
+logger = get_logger("pytest", log_console=True, log_file=False)
 
 
 class Slack:
@@ -100,9 +100,7 @@ class Slack:
 
         return self.send_raw_message(blocks, thread_ts)
 
-    @backoff.on_exception(
-        backoff.expo, errors.SlackApiError
-    )
+    @backoff.on_exception(backoff.expo, errors.SlackApiError, logger="pytest")
     def try_and_delete_message(self, message_ts, as_user=False):
         try:
             self.client.chat_delete(
@@ -116,8 +114,8 @@ class Slack:
             raise e
 
         except BaseException:
-            pytest_logger.debug("Error messages from slack")
-            pytest_logger.debug(traceback.print_exc())
+            logger.debug("Error messages from slack")
+            logger.debug(traceback.print_exc())
 
     def delete_message(self, slack_messages):
         as_user = False
