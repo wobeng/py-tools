@@ -114,8 +114,8 @@ class Slack:
             raise e
 
         except BaseException:
-            logger.debug("Error messages from slack")
-            logger.debug(traceback.print_exc())
+            logger.critical("Error messages from slack")
+            logger.critical(traceback.format_exc())
 
     def delete_message(self, slack_messages):
         as_user = False
