@@ -5,7 +5,7 @@ import traceback
 from py_tools.format import loads, dumps
 from py_tools.pylog import get_logger
 
-pytest_logger = get_logger("pytest", log_console=True, log_file=False)
+pytest_logger = get_logger("py-test", "debug")
 
 
 class Handlers:

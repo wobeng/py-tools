@@ -8,7 +8,7 @@ import tempfile
 
 from py_tools.pylog import get_logger
 
-logger = get_logger("pytest", log_console=True, log_file=False)
+logger = get_logger("py-test")
 
 
 class Slack:
