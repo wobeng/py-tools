@@ -27,7 +27,7 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None
 ):
-    def wrapper(event, context):
+    def wrapper(event, context=None):
         outpost = main_aws_lambda_handler(
             file, name, record_wrapper, before_request)(event, context)
 
