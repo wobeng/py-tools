@@ -5,7 +5,6 @@ import boto3
 from py_tools import format
 
 ssm = boto3.client("ssm")
-secretsmanager = boto3.client("secretsmanager")
 
 
 def replace_value(value):
@@ -35,9 +34,10 @@ def load_secret_manager(
     secret_names,
     names=None,
     load=True,
-    secrets_client=secretsmanager,
+    secrets_client=None,
     force=False,
 ):
+    secrets_client = secrets_client or boto3.Session().client("secretsmanager")
     secrets = {}
     for secret_name in secret_names.split(","):
         secret = secrets_client.get_secret_value(SecretId=secret_name)["SecretString"]
