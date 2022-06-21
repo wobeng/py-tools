@@ -3,7 +3,7 @@ from py_tools.dydb import DbModel
 
 from py_tools.date import date_id
 
-from pynamodb.attributes import UnicodeAttribute, NumberAttribute, MapAttribute
+from pynamodb.attributes import UnicodeAttribute, NumberAttribute, JSONAttribute
 
 
 class ReplayBin(DbModel):
@@ -17,7 +17,7 @@ class ReplayBin(DbModel):
         default_for_new=date_id(nickname), range_key=True
     )
     run_count = NumberAttribute(default=1)
-    record = MapAttribute()
+    record = JSONAttribute()
     reason = UnicodeAttribute()
 
 
