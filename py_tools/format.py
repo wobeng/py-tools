@@ -21,6 +21,7 @@ def loads(*args, **kwargs):
 
 
 def dumps(*args, **kwargs):
+    kwargs.setdefault("use_decimal", True)
     kwargs["cls"] = kwargs.get("cls", ModelEncoder)
     return simplejson.dumps(*args, **kwargs)
 
