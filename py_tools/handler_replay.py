@@ -2,8 +2,19 @@ from py_tools.handler import aws_lambda_handler as main_aws_lambda_handler
 from py_tools.dydb import DbModel
 
 from py_tools.date import date_id
-
+from py_tools import format
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, JSONAttribute
+
+
+class SimpleJSONAttribute(JSONAttribute):
+    def serialize(self, value):
+        """
+        Serializes JSON to unicode
+        """
+        if value is None:
+            return None
+        encoded = format.dumps(value)
+        return encoded
 
 
 class ReplayBin(DbModel):
@@ -17,7 +28,7 @@ class ReplayBin(DbModel):
         default_for_new=date_id(nickname), range_key=True
     )
     run_count = NumberAttribute(default=1)
-    record = JSONAttribute()
+    record = SimpleJSONAttribute()
     reason = UnicodeAttribute()
 
 
