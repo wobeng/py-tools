@@ -17,9 +17,10 @@ def gen_otp(pin=None, expire_in_seconds=600):
     }
 
 
-def otp_valid(pin, pin_hashed, expire_in_seconds):
-    if expire_in_seconds < int(time.time()):
-        return False
+def otp_valid(pin, pin_hashed, expire_in_seconds=None):
+    if expire_in_seconds:
+        if expire_in_seconds < int(time.time()):
+            return False
     if not bcrypt.checkpw(
         password=str(pin).encode(), hashed_password=pin_hashed.encode()
     ):
