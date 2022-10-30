@@ -2,7 +2,7 @@ import functools
 import operator
 import os
 from copy import deepcopy
-from datetime import datetime
+from py_tools.date import datetime_utc
 from typing import Any, Dict, List, Optional, Union
 
 from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
@@ -142,7 +142,7 @@ class DbModel(Model):
     def save_attributes(cls, item, **kwargs):
         item.update(kwargs)
         c = cls(**item)
-        now = datetime.utcnow()
+        now = datetime_utc()
         c.created_on = now
         c.updated_on = now
         return deepcopy(c)
@@ -215,7 +215,7 @@ class DbModel(Model):
             else:
                 for k in deletes:
                     actions.append(cls.deletes(k))
-        actions.append(cls.updated_on.set(datetime.utcnow()))
+        actions.append(cls.updated_on.set(datetime_utc()))
         return actions
 
     @classmethod
