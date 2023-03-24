@@ -58,7 +58,7 @@ class DynamicMapAttribute(MapAttribute):
 
 
 class DbModel(Model):
-    _db_conditions = []
+    _db_conditions = set()
     created_on = UTCDateTimeAttribute()
     updated_on = UTCDateTimeAttribute()
 
@@ -85,21 +85,21 @@ class DbModel(Model):
 
     @staticmethod
     def add_db_conditions(condition: Optional[Any]):
-        DbModel._db_conditions.append(condition)
+        DbModel._db_conditions.add(condition)
 
     @staticmethod
     def db_filter_conditions(condition: Optional[Condition]):
-        DbModel._db_conditions.append(condition)
+        DbModel._db_conditions.add(condition)
 
     @staticmethod
     def _output_db_condition():
         if not DbModel._db_conditions:
             return
         if len(DbModel._db_conditions) == 1:
-            output = DbModel._db_conditions[0]
+            output = next(iter(DbModel._db_conditions))
         else:
             output = functools.reduce(operator.iand, DbModel._db_conditions)
-        DbModel._db_conditions = []
+        DbModel._db_conditions = set()
         return output
 
     @classmethod
