@@ -22,6 +22,7 @@ setup(
         "dotty-dict",
         "backoff",
         "pynamodb",
-        "bcrypt"
+        "bcrypt",
+        "sentry-sdk"
     ],
 )

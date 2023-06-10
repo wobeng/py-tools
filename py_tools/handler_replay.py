@@ -4,6 +4,8 @@ from py_tools.dydb import DbModel
 from py_tools.date import date_id
 from py_tools import format
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, JSONAttribute
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 
 
 class SimpleJSONAttribute(JSONAttribute):
@@ -36,8 +38,16 @@ def aws_lambda_handler(
     file,
     name=None,
     record_wrapper=None,
-    before_request=None
+    before_request=None,
+    sentry_dsn=None,
 ):
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+            traces_sample_rate=1.0,
+        )
+
     def wrapper(event, context=None):
         outpost = main_aws_lambda_handler(
             file, name, record_wrapper, before_request)(event, context)
@@ -56,8 +66,13 @@ def aws_lambda_handler(
     return wrapper
 
 
-def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_request=None):
-
+def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None):
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+            traces_sample_rate=1.0,
+        )
     file = file.replace("/adhoc/", "/")
 
     def wrapper(event=None, context=None):

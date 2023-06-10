@@ -2,10 +2,8 @@ import importlib.util
 import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
-from py_tools.format import loads, dumps
-from py_tools.pylog import get_logger
-
-pytest_logger = get_logger("py-test", "debug")
+from py_tools.format import loads
+import sentry_sdk
 
 
 class Handlers:
@@ -20,14 +18,16 @@ class Handlers:
     def dynamodb(self):
         wrapper = self.record_wrapper or StreamRecord
         record = wrapper(self.record)
-        m = self.module_handler(self.file, record.trigger_module, folder="dynamodb")
+        m = self.module_handler(
+            self.file, record.trigger_module, folder="dynamodb")
         functions = getattr(m, record.event_name, [])
         for function in functions:
             function(record, self.context)
         return
 
     def sqs(self):
-        module_name = self.record["eventSourceARN"].split(":")[-1].replace(".fifo", "")
+        module_name = self.record["eventSourceARN"].split(
+            ":")[-1].replace(".fifo", "")
         m = self.module_handler(self.file, module_name, folder="sqs")
         return m.handler(loads(self.record["body"]), self.record)
 
@@ -68,7 +68,7 @@ class OutPost:
         self.add_replays(entry)
 
 
-def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None):
+def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None, send_sentry=False):
     def handler(event, context):
         outpost = OutPost()
 
@@ -93,16 +93,15 @@ def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None
                 # add to process list
                 outpost.add_processed(output)
 
-            except BaseException:
-                reason = traceback.format_exc()
+            except BaseException as e:
+                # send to sentry
+                if send_sentry:
+                    sentry_sdk.set_context("record", record)
+                    sentry_sdk.capture_exception(e)
 
                 if source_handler != "adhoc":
-                    outpost.process_failed(name, record, reason)
-
-                pytest_logger.debug(
-                    "Unprocessed Record:====>%s", dumps(record, indent=1)
-                )
-                pytest_logger.debug("Exception:====>%s", reason)
+                    outpost.process_failed(
+                        name, record, traceback.format_exc())
 
         return outpost
 

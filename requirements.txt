@@ -12,3 +12,4 @@ backoff
 pynamodb
 pre-commit
 bcrypt
+sentry-sdk
