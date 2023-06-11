@@ -44,14 +44,20 @@ def aws_lambda_handler(
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)],
-            traces_sample_rate=1.0,
+            integrations=[AwsLambdaIntegration(timeout_warning=True)]
         )
 
     def wrapper(event, context=None):
-        outpost = main_aws_lambda_handler(
-            file, name, record_wrapper, before_request)(event, context)
 
+        function = main_aws_lambda_handler(
+            file = file, 
+            name = name, 
+            record_wrapper=record_wrapper, 
+            before_request=before_request, 
+            send_sentry=(sentry_dsn is not None)
+            )
+        
+        outpost = function(event, context)
         # add to replay table
         if outpost.replays:
             with ReplayBin.batch_write() as batch:
@@ -66,22 +72,32 @@ def aws_lambda_handler(
     return wrapper
 
 
-def aws_lambda_replay_handler(file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None):
+def aws_lambda_replay_handler(file, 
+                              name=None, 
+                              record_wrapper=None, 
+                              before_request=None, 
+                              sentry_dsn=None
+    ):
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)],
-            traces_sample_rate=1.0,
+            integrations=[AwsLambdaIntegration(timeout_warning=True)]
         )
     file = file.replace("/adhoc/", "/")
 
     def wrapper(event=None, context=None):
-
+        function = main_aws_lambda_handler(
+            file = file, 
+            name = name, 
+            record_wrapper=record_wrapper, 
+            before_request=before_request, 
+            send_sentry=(sentry_dsn is not None)
+            )
+            
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
 
-            outpost = main_aws_lambda_handler(
-                file, name, record_wrapper, before_request)(item["record"], context)
+            outpost = function(item["record"], context)
 
             if outpost.replays:
                 ReplayBin.update_item(
