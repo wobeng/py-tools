@@ -1,6 +1,6 @@
 from py_tools.handler import aws_lambda_handler as main_aws_lambda_handler
 from py_tools.dydb import DbModel
-
+import os
 from py_tools.date import date_id
 from py_tools import format
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, JSONAttribute
@@ -44,7 +44,8 @@ def aws_lambda_handler(
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)]
+            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+             environment=os.environ["ENVIRONMENT"]
         )
 
     def wrapper(event, context=None):
@@ -81,7 +82,8 @@ def aws_lambda_replay_handler(file,
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)]
+            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+            environment=os.environ["ENVIRONMENT"]
         )
     file = file.replace("/adhoc/", "/")
 
