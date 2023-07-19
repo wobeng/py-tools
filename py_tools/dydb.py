@@ -83,23 +83,23 @@ class DbModel(Model):
             key[self._range_keyname] = getattr(self, self._range_keyname)
         return key
 
-    @staticmethod
-    def add_db_conditions(condition: Optional[Any]):
-        DbModel._db_conditions.add(condition)
+    @classmethod
+    def add_db_conditions(cls, condition: Optional[Any]):
+        cls._db_conditions.add(condition)
 
-    @staticmethod
-    def db_filter_conditions(condition: Optional[Condition]):
-        DbModel._db_conditions.add(condition)
+    @classmethod
+    def db_filter_conditions(cls, condition: Optional[Condition]):
+        cls._db_conditions.add(condition)
 
-    @staticmethod
-    def _output_db_condition():
-        if not DbModel._db_conditions:
+    @classmethod
+    def _output_db_condition(cls):
+        if not cls._db_conditions:
             return
-        if len(DbModel._db_conditions) == 1:
-            output = next(iter(DbModel._db_conditions))
+        if len(cls._db_conditions) == 1:
+            output = next(iter(cls._db_conditions))
         else:
-            output = functools.reduce(operator.iand, DbModel._db_conditions)
-        DbModel._db_conditions = set()
+            output = functools.reduce(operator.iand, cls._db_conditions)
+        cls._db_conditions.clear()
         return output
 
     @classmethod
@@ -283,6 +283,7 @@ class DbModel(Model):
 
 class TransactWrite(_TransactWrite):
     def save(self, model, condition=None, return_values=None, **kwargs):
+        print("in save",model._db_conditions)
         key_name = model._hash_keyname
         overwrite = kwargs.get("overwrite", False)
         hash_key = getattr(model.__class__, key_name)
@@ -290,6 +291,7 @@ class TransactWrite(_TransactWrite):
             model.add_db_conditions(hash_key.does_not_exist())
         if condition is not None:
             model.add_db_conditions(condition)
+        print("out save",model._db_conditions)
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
@@ -300,6 +302,7 @@ class TransactWrite(_TransactWrite):
     def update(
         self, model, actions, condition=None, return_values=None, **kwargs
     ):
+        print("in update", model._db_conditions)
         key_name = model._hash_keyname
         overwrite = kwargs.get("overwrite", False)
         hash_key = getattr(model.__class__, key_name)
@@ -307,6 +310,7 @@ class TransactWrite(_TransactWrite):
             model.add_db_conditions(hash_key.exists())
         if condition is not None:
             model.add_db_conditions(condition)
+        print("out update", model._db_conditions)
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
@@ -317,11 +321,13 @@ class TransactWrite(_TransactWrite):
         )
 
     def delete(self, model, condition=None, **kwargs):
+        print("in delete", model._db_conditions)
         key_name = model._hash_keyname
         hash_key = getattr(model.__class__, key_name)
         model.add_db_conditions(hash_key.exists())
         if condition is not None:
             model.add_db_conditions(condition)
+        print("out delete", model._db_conditions)
         condition = model._output_db_condition()
         # set hash key if missing
         if not getattr(model, key_name):
