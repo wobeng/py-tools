@@ -12,6 +12,9 @@ def validate_schema_data(incoming_data, json_schema):
 
 def validate_schemas_data(incoming_data, json_schema):
     type_errors = []
+
+    if len(incoming_data) != len(json_schema):
+        raise Exception("Schema length does not match incoming data length")
     
     for index, item in enumerate(incoming_data):
         item = format.clean_empty(item)
