@@ -26,5 +26,5 @@ def validate_schemas_data(incoming_data, json_schema):
             type_errors.append(msg)
 
     if type_errors:
-        raise Exception(",".join(type_errors))
+        raise Exception(", ".join(type_errors))
     return {"content": incoming_data,  "schema": json_schema}
