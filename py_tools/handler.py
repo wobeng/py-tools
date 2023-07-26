@@ -2,9 +2,9 @@ import importlib.util
 import os
 from py_tools.dydb_utils import StreamRecord
 import traceback
-from py_tools.format import loads
+from py_tools.format import loads, dumps
 import sentry_sdk
-
+import gzip
 
 class Handlers:
     def __init__(self, file, record, context, record_wrapper=None, before_request=None):
@@ -64,7 +64,8 @@ class OutPost:
         self.replays.append(output)
 
     def process_failed(self, name, record, reason):
-        entry = {"bin": name, "record": record, "reason": reason}
+        compressed_data = gzip.compress(format.dumps(record).encode('utf-8'))
+        entry = {"bin": name, "record": compressed_data, "reason": reason}
         self.add_replays(entry)
 
 

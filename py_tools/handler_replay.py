@@ -3,20 +3,11 @@ from py_tools.dydb import DbModel
 import os
 from py_tools.date import date_id
 from py_tools import format
-from pynamodb.attributes import UnicodeAttribute, NumberAttribute, JSONAttribute
+from pynamodb.attributes import UnicodeAttribute, NumberAttribute
 import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+import gzip
 
-
-class SimpleJSONAttribute(JSONAttribute):
-    def serialize(self, value):
-        """
-        Serializes JSON to unicode
-        """
-        if value is None:
-            return None
-        encoded = format.dumps(value)
-        return encoded
 
 
 class ReplayBin(DbModel):
@@ -30,7 +21,7 @@ class ReplayBin(DbModel):
         default_for_new=date_id(nickname), range_key=True
     )
     run_count = NumberAttribute(default=1)
-    record = SimpleJSONAttribute()
+    record = UnicodeAttribute()
     reason = UnicodeAttribute()
 
 
@@ -98,8 +89,10 @@ def aws_lambda_replay_handler(file,
             
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
+            decompressed_data = gzip.decompress(item["record"])
+            record = format.loads(decompressed_data.decode('utf-8'))
 
-            outpost = function(item["record"], context)
+            outpost = function(record, context)
 
             if outpost.replays:
                 ReplayBin.update_item(
