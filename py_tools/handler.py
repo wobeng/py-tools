@@ -64,7 +64,7 @@ class OutPost:
         self.replays.append(output)
 
     def process_failed(self, name, record, reason):
-        compressed_data = gzip.compress(format.dumps(record).encode('utf-8'))
+        compressed_data = gzip.compress(dumps(record).encode('utf-8'))
         entry = {"bin": name, "record": compressed_data, "reason": reason}
         self.add_replays(entry)
 
