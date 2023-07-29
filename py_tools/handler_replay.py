@@ -2,13 +2,21 @@ from py_tools.handler import aws_lambda_handler as main_aws_lambda_handler
 from py_tools.dydb import DbModel
 import os
 from py_tools.date import date_id
-from py_tools import format
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute
 import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 import gzip
+import base64
+from py_tools.format import loads
 
 
+def decompress_json(compressed_string):
+    compressed_data = base64.b64decode(compressed_string.encode())
+    decompressed_data = gzip.decompress(compressed_data)
+    decompressed_json_string = decompressed_data.decode()
+    data = loads(decompressed_json_string)
+    return data
+    
 
 class ReplayBin(DbModel):
     nickname = "replay"
@@ -89,8 +97,7 @@ def aws_lambda_replay_handler(file,
             
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
-            decompressed_data = gzip.decompress(item["record"])
-            record = format.loads(decompressed_data.decode('utf-8'))
+            record = decompress_json(item["record"])
 
             outpost = function(record, context)
 
