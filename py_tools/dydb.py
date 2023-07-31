@@ -93,13 +93,16 @@ class DbModel(Model):
 
     @classmethod
     def _output_db_condition(cls):
-        if not cls._db_conditions:
-            return
-        if len(cls._db_conditions) == 1:
+        conditions_ct = len(cls._db_conditions)
+
+        if conditions_ct == 0:
+            output = None
+        elif conditions_ct == 1:
             output = next(iter(cls._db_conditions))
         else:
             output = functools.reduce(operator.iand, cls._db_conditions)
-        cls._db_conditions.clear()
+        # reset conditions
+        cls._db_conditions = set()
         return output
 
     @classmethod
