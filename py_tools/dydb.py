@@ -281,7 +281,6 @@ class DbModel(Model):
             attributes_to_get=attributes_to_get,
             page_size=page_size,
             rate_limit=rate_limit,
-            **filters
         )
         return items
 
