@@ -93,16 +93,18 @@ class DbModel(Model):
 
     @classmethod
     def _output_db_condition(cls):
-        conditions_ct = len(cls._db_conditions)
-
-        if conditions_ct == 0:
-            output = None
-        elif conditions_ct == 1:
-            output = next(iter(cls._db_conditions))
-        else:
-            output = functools.reduce(operator.iand, cls._db_conditions)
+        items = deepcopy(cls._db_conditions)
         # reset conditions
-        cls._db_conditions = set()
+        cls._db_conditions.clear()
+
+        if not items:
+            return None
+        
+        if len(items) == 1:
+            output = next(iter(items))
+        else:
+            output = functools.reduce(operator.iand, items)
+
         return output
 
     @classmethod
@@ -259,7 +261,6 @@ class DbModel(Model):
         consistent_read=False,
         index_name=None,
         scan_index_forward=None,
-        conditional_operator=None,
         limit=None,
         last_evaluated_key=None,
         attributes_to_get=None,
@@ -280,6 +281,7 @@ class DbModel(Model):
             attributes_to_get=attributes_to_get,
             page_size=page_size,
             rate_limit=rate_limit,
+            **filters
         )
         return items
 
