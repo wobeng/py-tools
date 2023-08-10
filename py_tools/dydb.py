@@ -126,7 +126,7 @@ class DbModel(Model):
             self.add_db_conditions(self._hash_key.does_not_exist())
         if condition is not None:
             self.add_db_conditions(condition)
-        return super(DbModel, self).save(DbModel._output_db_condition())
+        return super(DbModel, self).save(self.__class__._output_db_condition())
 
     def update(self, actions, condition=None, overwrite=False):
         if not overwrite:
@@ -134,14 +134,14 @@ class DbModel(Model):
         if condition is not None:
             self.add_db_conditions(condition)
         return super(DbModel, self).update(
-            actions, DbModel._output_db_condition()
+            actions, self.__class__._output_db_condition()
         )
 
     def delete(self, condition=None):
         self.add_db_conditions(self._hash_key.exists())
         if condition is not None:
             self.add_db_conditions(condition)
-        return super(DbModel, self).delete(DbModel._output_db_condition())
+        return super(DbModel, self).delete(self.__class__._output_db_condition())
 
     @classmethod
     def save_attributes(cls, item, **kwargs):
@@ -272,7 +272,7 @@ class DbModel(Model):
         items = super(DbModel, cls).query(
             hash_key=hash_key,
             range_key_condition=range_key_condition,
-            filter_condition=DbModel._output_db_condition(),
+            filter_condition=cls._output_db_condition(),
             consistent_read=consistent_read,
             index_name=index_name,
             scan_index_forward=scan_index_forward,
