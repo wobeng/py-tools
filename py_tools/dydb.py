@@ -11,7 +11,7 @@ from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
-
+from sentry_sdk import add_breadcrumb
 
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
@@ -27,7 +27,7 @@ class DynamicMapAttribute(MapAttribute):
     def __init__(self, *args, of=None, **kwargs):
         if of:
             if not issubclass(of, MapAttribute):
-                raise ValueError("'of' must be subclass of MapAttribute")
+                raise ValueError("\"of\" must be subclass of MapAttribute")
             self.element_type = of
         super(DynamicMapAttribute, self).__init__(*args, **kwargs)
 
@@ -85,6 +85,11 @@ class DbModel(Model):
 
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
+        add_breadcrumb(
+            category="auth",
+            message="Adding condition %s from class %s" % (condition, cls.__name__),
+            level="info"
+        )
         cls._db_conditions.add(condition)
 
     @classmethod
