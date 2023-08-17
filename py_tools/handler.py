@@ -104,7 +104,7 @@ def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None
                 # send to sentry
                 if send_sentry:
                     sentry_sdk.set_context("record", record)
-                    sentry_sdk.capture_exception(e)
+                    sentry_sdk.capture_exception()
 
                 if source_handler != "adhoc":
                     outpost.process_failed(
