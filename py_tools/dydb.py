@@ -86,26 +86,41 @@ class DbModel(Model):
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
         add_breadcrumb(
-            category="auth",
+            category="dydb",
             message="Adding condition %s from class %s" % (condition, cls.__name__),
             level="info"
         )
         cls._db_conditions.add(condition)
 
     @classmethod
-    def db_filter_conditions(cls, condition: Optional[Condition]):
-        cls._db_conditions.add(condition)
-
-    @classmethod
     def _output_db_condition(cls):
+        add_breadcrumb(
+            category="dydb",
+            message="Getting conditions",
+            level="info"
+        )
         items = deepcopy(cls._db_conditions)
         # reset conditions
         cls._db_conditions.clear()
-
+        add_breadcrumb(
+            category="dydb",
+            message="Cleared conditions for next use",
+            level="info"
+        )
         if not items:
+            add_breadcrumb(
+                category="dydb",
+                message="Conditions is empty",
+                level="info"
+            )
             return None
-        
-        if len(items) == 1:
+        cond_len = len(items)
+        add_breadcrumb(
+            category="dydb",
+            message="Conditions contains %s items" % cond_len,
+            level="info"
+        )
+        if cond_len == 1:
             output = next(iter(items))
         else:
             output = functools.reduce(operator.iand, items)
