@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
 from pynamodb.exceptions import DoesNotExist
-from pynamodb.expressions.condition import Condition
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
@@ -321,9 +320,7 @@ class TransactWrite(_TransactWrite):
                 setattr(model, key_name, os.environ["HASH_KEY"])
         return super(TransactWrite, self).save(model, condition, return_values)
 
-    def update(
-        self, model, actions, condition=None, return_values=None, **kwargs
-    ):
+    def update(self, model, actions, condition=None, return_values=None, **kwargs):
         key_name = model._hash_keyname
         overwrite = kwargs.get("overwrite", False)
         hash_key = getattr(model.__class__, key_name)
@@ -340,7 +337,7 @@ class TransactWrite(_TransactWrite):
             model, actions, condition, return_values
         )
 
-    def delete(self, model, condition=None, **kwargs):
+    def delete(self, model, condition=None):
         key_name = model._hash_keyname
         hash_key = getattr(model.__class__, key_name)
         model.add_db_conditions(hash_key.exists())
@@ -352,3 +349,13 @@ class TransactWrite(_TransactWrite):
             if "HASH_KEY" in os.environ:
                 setattr(model, key_name, os.environ["HASH_KEY"])
         super(TransactWrite, self).delete(model, condition)
+
+    def condition_check(self, model_cls, hash_key=None, range_key=None, condition=None):
+        if condition is not None:
+            model_cls.add_db_conditions(condition)
+        condition = model_cls._output_db_condition()
+        # set hash key if missing
+        if hash_key is None:
+            hash_key = os.environ["HASH_KEY"]
+        return super(TransactWrite, self).condition_check(
+            model_cls, hash_key, range_key, condition)
