@@ -351,11 +351,16 @@ class TransactWrite(_TransactWrite):
         super(TransactWrite, self).delete(model, condition)
 
     def condition_check(self, model_cls, hash_key=None, range_key=None, condition=None):
-        if condition is not None:
-            model_cls.add_db_conditions(condition)
-        condition = model_cls._output_db_condition()
         # set hash key if missing
         if hash_key is None:
             hash_key = os.environ["HASH_KEY"]
+
+        if condition is not None:
+            model_cls.add_db_conditions(condition)
+        condition = model_cls._output_db_condition()
+
+        if condition is None:
+            return
+        
         return super(TransactWrite, self).condition_check(
             model_cls, hash_key, range_key, condition)
