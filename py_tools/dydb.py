@@ -20,7 +20,7 @@ class ModelEncoder(format.ModelEncoder):
 
 class JSONAttribute(JSONA):
 
-    def serialize(self, value) -> Optional[str]:
+    def serialize(self, value):
         if value is None:
             return None
         encoded = format.dumps(value)
