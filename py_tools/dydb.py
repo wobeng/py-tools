@@ -10,7 +10,7 @@ from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
-from sentry_sdk import add_breadcrumb
+from py_tools.pylog import add_breadcrumb
 
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
