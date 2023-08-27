@@ -10,7 +10,9 @@ from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
-from py_tools.pylog import log_breadcrumb
+from py_tools.pylog import get_logger
+
+logger = get_logger("dydb",  log_console=False)
 
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
@@ -94,7 +96,7 @@ class DbModel(Model):
 
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
-        log_breadcrumb(
+        logger.info(
             category="dydb",
             message="Adding condition %s from class %s" % (condition, cls.__name__),
             level="info"
@@ -103,7 +105,7 @@ class DbModel(Model):
 
     @classmethod
     def _output_db_condition(cls):
-        log_breadcrumb(
+        logger.info(
             category="dydb",
             message="Getting conditions",
             level="info"
@@ -111,20 +113,20 @@ class DbModel(Model):
         items = deepcopy(cls._db_conditions)
         # reset conditions
         cls._db_conditions.clear()
-        log_breadcrumb(
+        logger.info(
             category="dydb",
             message="Cleared conditions for next use",
             level="info"
         )
         if not items:
-            log_breadcrumb(
+            logger.info(
                 category="dydb",
                 message="Conditions is empty",
                 level="info"
             )
             return None
         cond_len = len(items)
-        log_breadcrumb(
+        logger.info(
             category="dydb",
             message="Conditions contains %s items" % cond_len,
             level="info"
