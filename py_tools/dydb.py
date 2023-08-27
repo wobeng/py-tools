@@ -5,7 +5,7 @@ from copy import deepcopy
 from py_tools.date import datetime_utc
 from typing import Any, Dict, List, Optional, Union
 
-from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute
+from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute, JSONAttribute as JSONA
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
@@ -18,7 +18,17 @@ class ModelEncoder(format.ModelEncoder):
             return obj.attribute_values
         return super(ModelEncoder, self).default(obj)
 
+class JSONAttribute(JSONA):
 
+    def serialize(self, value) -> Optional[str]:
+        if value is None:
+            return None
+        encoded = format.dumps(value)
+        return encoded
+
+    def deserialize(self, value):
+        return format.loads(value)
+    
 class DynamicMapAttribute(MapAttribute):
 
     element_type = None
