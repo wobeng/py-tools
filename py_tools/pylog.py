@@ -22,9 +22,10 @@ def get_file_handler(name):
 def get_logger(logger_name=None, log_console=True, log_file=False):
     logger = logging.getLogger(logger_name)
     logger.propagate = True if not log_file else False
-    logger.setLevel(
-        logging.INFO if os.environ.get("ENVIRONMENT","master") else logging.DEBUG
-    )
+    if os.environ.get("ENVIRONMENT","master") == "master":
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.DEBUG)
     if not logger.hasHandlers():
         if log_console:
             logger.addHandler(get_console_handler())
