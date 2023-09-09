@@ -2,24 +2,11 @@ import random
 import time
 
 import boto3
-from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
+from py_tools.dydb_utils import deserialize_output, serialize_input
+
 
 dynamodb = boto3.client("dynamodb")
 
-
-def serialize_input(value):
-    output = {}
-    ty = TypeSerializer()
-    for k, v in value.items():
-        output[k] = ty.serialize(v)
-    return output
-
-
-def deserialize_output(value):
-    ty = TypeDeserializer()
-    for k, v in dict(value).items():
-        value[k] = int(v["N"]) if "N" in v else ty.deserialize(v)
-    return value
 
 
 def projection_string(func):

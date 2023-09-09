@@ -3,6 +3,24 @@ import re
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 
+def deserialize_output(value):
+    try:
+        td = TypeDeserializer()
+        for k, v in dict(value).items():
+            value[k] = td.deserialize(v)
+    except BaseException:
+        pass
+    return value
+
+def serialize_input(value):
+    try:
+        td = TypeSerializer()
+        for k, v in dict(value).items():
+            value[k] = td.serialize(v)
+    except BaseException:
+        pass
+    return value
+
 def get_all_items(table, attributes_to_get=None):
     last_evaluated_key = None
     items = []
@@ -24,32 +42,13 @@ def get_all_items(table, attributes_to_get=None):
 
 
 class StreamRecord:
-    @staticmethod
-    def deserialize_output(value):
-        try:
-            td = TypeDeserializer()
-            for k, v in dict(value).items():
-                value[k] = td.deserialize(v)
-        except BaseException:
-            pass
-        return value
-
-    @staticmethod
-    def serialize_output(value):
-        try:
-            td = TypeSerializer()
-            for k, v in dict(value).items():
-                value[k] = td.serialize(v)
-        except BaseException:
-            pass
-        return value
 
     def __init__(self, record):
-        self.key = self.deserialize_output(record["dynamodb"]["Keys"])
-        self.new_image = self.deserialize_output(
+        self.key = deserialize_output(record["dynamodb"]["Keys"])
+        self.new_image = deserialize_output(
             record["dynamodb"].get("NewImage", {})
         )
-        self.old_image = self.deserialize_output(
+        self.old_image = deserialize_output(
             record["dynamodb"].get("OldImage", {})
         )
         self.event_name = record["eventName"].lower()
