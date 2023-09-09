@@ -3,12 +3,14 @@ import time
 
 import boto3
 from py_tools.dydb_utils import deserialize_output, serialize_input
+from py_tools.pylog import get_logger
+from py_tools.format import dumps
 
+dynamodb_client = boto3.client("dynamodb")
+dynamodb_resource = boto3.resource("dynamodb")
 
-dynamodb = boto3.client("dynamodb")
-
-
-
+logger = get_logger("dydb_batch",  log_console=False)
+    
 def projection_string(func):
     def wrapper(*args, **kwargs):
         if "ProjectionExpression" in kwargs:
@@ -32,8 +34,10 @@ def projection_string(func):
 
 
 class DynamoDbBatch:
-    def __init__(self):
-        self.client = dynamodb
+    def __init__(self, dry_run=False):
+        self.dry_run = dry_run
+        self.client = dynamodb_client
+        self.resource_client = dynamodb_resource
         self.request_items = {}
 
     @projection_string
@@ -46,14 +50,14 @@ class DynamoDbBatch:
         if table not in self.request_items:
             self.request_items[table] = []
         self.request_items[table].append(
-            {"PutRequest": {"Item": serialize_input(item)}}
+            {"put_item": {"Item": serialize_input(item)}}
         )
 
     def delete_item(self, table, key):
         if table not in self.request_items:
             self.request_items[table] = []
         self.request_items[table].append(
-            {"DeleteRequest": {"Key": serialize_input(key)}}
+            {"delete_item": {"Key": serialize_input(key)}}
         )
 
     def batch_read(self):
@@ -73,15 +77,19 @@ class DynamoDbBatch:
             results[table] = [deserialize_output(r) for r in records]
         return results
 
+
     def batch_write(self):
-        n = 0
-        response = self.client.batch_write_item(
-            RequestItems=self.request_items
-        )
-        while response["UnprocessedItems"]:
-            # Implement some kind of exponential back off here
-            n = n + 1
-            time.sleep((2**n) + random.randint(0, 1000) / 1000)
-            response = self.client.batch_write_item(
-                RequestItems=response["UnprocessedItems"]
-            )
+        for table_name, records in self.request_items.items():
+            table = self.resource_client.Table(table_name)
+            with table.batch_writer() as batch:
+                for record in records:
+                    if "put_item" in record:
+                        item = record["put_item"]["Item"]
+                        logger.info("Adding item %s to table %s" % (dumps(item), table_name))
+                        if not self.dry_run:
+                            batch.put_item(Item=item)
+                    elif "delete_item" in record:
+                        key = record["delete_item"]["Key"]
+                        logger.info("Deleting key %s to table %s" % (dumps(key), table_name))
+                        if not self.dry_run:
+                            batch.delete_item(Key=key)
