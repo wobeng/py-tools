@@ -12,7 +12,7 @@ from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
 from py_tools.pylog import get_logger
 
-logger = get_logger("dydb",  log_console=False)
+logger = get_logger("dydb")
 
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
