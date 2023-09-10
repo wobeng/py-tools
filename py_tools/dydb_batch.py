@@ -90,6 +90,6 @@ class DynamoDbBatch:
                             batch.put_item(Item=item)
                     elif "delete_item" in record:
                         key = record["delete_item"]["Key"]
-                        logger.info("Deleting key %s to table %s" % (dumps(key), table_name))
+                        logger.info("Deleting key %s from table %s" % (dumps(key), table_name))
                         if not self.dry_run:
                             batch.delete_item(Key=key)
