@@ -40,7 +40,7 @@ class Handlers:
 
     def adhoc(self):
         m = self.module_handler(self.file, self.record["type"], folder="adhoc")
-        return m.handler(self.record)
+        return m.handler(self.record, self.context)
 
     @staticmethod
     def module_handler(file, module_name, folder="sqs"):
