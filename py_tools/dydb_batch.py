@@ -79,17 +79,22 @@ class DynamoDbBatch:
 
 
     def batch_write(self):
+        table_ct, delete_ct, put_ct = 0, 0, 0  
         for table_name, records in self.request_items.items():
+            table_ct += 1
             table = self.resource_client.Table(table_name)
             with table.batch_writer() as batch:
                 for record in records:
                     if "put_item" in record:
+                        put_ct += 1
                         item = record["put_item"]["Item"]
                         logger.info("Adding item %s to table %s" % (dumps(item), table_name))
                         if not self.dry_run:
                             batch.put_item(Item=item)
                     elif "delete_item" in record:
+                        delete_ct += 1
                         key = record["delete_item"]["Key"]
                         logger.info("Deleting key %s from table %s" % (dumps(key), table_name))
                         if not self.dry_run:
                             batch.delete_item(Key=key)
+        logger.info("Wrote %s items and deleted %s items from %s tables" % (put_ct, delete_ct, table_ct))
