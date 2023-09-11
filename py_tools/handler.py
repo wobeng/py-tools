@@ -100,7 +100,7 @@ def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None
                 # add to process list
                 outpost.add_processed(output)
 
-            except BaseException as e:
+            except BaseException:
                 # send to sentry
                 if send_sentry:
                     sentry_sdk.set_context("record", record)
@@ -109,6 +109,8 @@ def aws_lambda_handler(file, name=None, record_wrapper=None, before_request=None
                 if source_handler != "adhoc":
                     outpost.process_failed(
                         name, record, traceback.format_exc())
+                else:
+                    raise
 
         return outpost
 
