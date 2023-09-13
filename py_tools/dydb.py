@@ -69,7 +69,7 @@ class DynamicMapAttribute(MapAttribute):
 
 
 class DbModel(Model):
-    _db_conditions = set()
+    _db_conditions = {}
     created_on = UTCDateTimeAttribute()
     updated_on = UTCDateTimeAttribute()
 
@@ -97,15 +97,14 @@ class DbModel(Model):
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
         logger.info("Adding condition %s from class %s" % (condition, cls.__name__))
-        cls._db_conditions.add(condition)
+        if cls.__name__ not in cls._db_conditions:
+            cls._db_conditions[cls.__name__] = set()
+        cls._db_conditions[cls.__name__].add(condition)
 
     @classmethod
     def _output_db_condition(cls):
-        logger.info("Getting conditions")
-        items = deepcopy(cls._db_conditions)
-        # reset conditions
-        cls._db_conditions.clear()
-        logger.info("Cleared conditions for next use")
+        logger.info("Getting conditions for class %s" % cls.__name__)
+        items = deepcopy(cls._db_conditions.pop(cls.__name__, set()))
         if not items:
             logger.info("Conditions is empty")
             return None

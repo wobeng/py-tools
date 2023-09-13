@@ -1,20 +1,23 @@
 import re
 
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
-
+from decimal import Decimal
 
 def deserialize_output(value):
+    td = TypeDeserializer()
     try:
-        td = TypeDeserializer()
         for k, v in dict(value).items():
-            value[k] = td.deserialize(v)
+            py_val = td.deserialize(v)
+            if isinstance(py_val, Decimal):
+                py_val = int(py_val)
+            value[k] = py_val
     except BaseException:
         pass
     return value
 
 def serialize_input(value):
+    td = TypeSerializer()
     try:
-        td = TypeSerializer()
         for k, v in dict(value).items():
             value[k] = td.serialize(v)
     except BaseException:
