@@ -9,7 +9,7 @@ from py_tools.format import dumps
 dynamodb_client = boto3.client("dynamodb")
 dynamodb_resource = boto3.resource("dynamodb")
 
-logger = get_logger("dydb_batch")
+logger = get_logger("py-tools.dydb_batch")
     
 def projection_string(func):
     def wrapper(*args, **kwargs):
