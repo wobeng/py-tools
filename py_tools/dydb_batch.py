@@ -51,7 +51,7 @@ class DynamoDbBatch:
             self.request_items[table] = []
         logger.info("Queuing put item %s to table %s" % (dumps(item), table))
         self.request_items[table].append(
-            {"put_item": {"Item": serialize_input(item)}}
+            {"put_item": {"Item": item}}
         )
 
     def delete_item(self, table, key):
@@ -59,7 +59,7 @@ class DynamoDbBatch:
             self.request_items[table] = []
         logger.info("Queuing delelte item %s to table %s" % (dumps(key), table))
         self.request_items[table].append(
-            {"delete_item": {"Key": serialize_input(key)}}
+            {"delete_item": {"Key": key}}
         )
 
     def batch_read(self):
