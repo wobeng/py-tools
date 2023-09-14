@@ -49,6 +49,7 @@ class DynamoDbBatch:
     def post_item(self, table, item):
         if table not in self.request_items:
             self.request_items[table] = []
+        logger.info("Queuing put item %s to table %s" % (dumps(item), table))
         self.request_items[table].append(
             {"put_item": {"Item": serialize_input(item)}}
         )
@@ -56,6 +57,7 @@ class DynamoDbBatch:
     def delete_item(self, table, key):
         if table not in self.request_items:
             self.request_items[table] = []
+        logger.info("Queuing delelte item %s to table %s" % (dumps(key), table))
         self.request_items[table].append(
             {"delete_item": {"Key": serialize_input(key)}}
         )
