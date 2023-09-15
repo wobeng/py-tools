@@ -12,7 +12,7 @@ def compress_json(json_data):
     compressed_data = gzip.compress(json_string.encode())
     compressed_string = base64.b64encode(compressed_data).decode()
     return compressed_string
-    
+
 class Handlers:
     def __init__(self, file, record, context, record_wrapper=None, before_request=None):
         self.file = file

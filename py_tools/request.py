@@ -21,7 +21,7 @@ class Request:
         headers = {"Authorization": f"Bearer {self.token}"}
 
         response = self.make_request(method, url, headers=headers, **kwargs)
-        
+
         if not response.ok:
             attrs = {
                 "method": method,
@@ -32,11 +32,10 @@ class Request:
             for k, v in attrs.items():
                 logger.info("Failed %s: %s" % (k, v))
         return response
-        
+
     def make_request(self, method, url, **kwargs):
         return getattr(requests, method)(url=url, **kwargs)
 
     def handle_response(self, response):
         if not response.ok:
             logger.debug(response.text)
-    

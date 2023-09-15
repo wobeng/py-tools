@@ -24,10 +24,9 @@ def execute_output(command, quiet=False, quiet_err=False, output_json=True):
 
     if not output_json:
         return output
-        
+
     try:
         output = json.loads(output)
     except json.decoder.JSONDecodeError:
         pass
     return output
-

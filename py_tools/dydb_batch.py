@@ -10,7 +10,7 @@ dynamodb_client = boto3.client("dynamodb")
 dynamodb_resource = boto3.resource("dynamodb")
 
 logger = get_logger("py-tools.dydb_batch")
-    
+
 def projection_string(func):
     def wrapper(*args, **kwargs):
         if "ProjectionExpression" in kwargs:
@@ -81,7 +81,7 @@ class DynamoDbBatch:
 
 
     def batch_write(self):
-        table_ct, delete_ct, put_ct = 0, 0, 0  
+        table_ct, delete_ct, put_ct = 0, 0, 0
         for table_name, records in self.request_items.items():
             table_ct += 1
             table = self.resource_client.Table(table_name)

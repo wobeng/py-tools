@@ -36,4 +36,3 @@ def get_logger(logger_name=None, log_console=True, log_file=False):
             logger.addHandler(get_file_handler(
                 os.path.join(log_dir, logger_name + ".log")))
     return logger
-

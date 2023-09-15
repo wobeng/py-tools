@@ -16,7 +16,7 @@ def decompress_json(compressed_string):
     decompressed_json_string = decompressed_data.decode()
     data = loads(decompressed_json_string)
     return data
-    
+
 
 class ReplayBin(DbModel):
     nickname = "replay"
@@ -50,13 +50,13 @@ def aws_lambda_handler(
     def wrapper(event, context=None):
 
         function = main_aws_lambda_handler(
-            file = file, 
-            name = name, 
-            record_wrapper=record_wrapper, 
-            before_request=before_request, 
+            file = file,
+            name = name,
+            record_wrapper=record_wrapper,
+            before_request=before_request,
             send_sentry=(sentry_dsn is not None)
             )
-        
+
         outpost = function(event, context)
         # add to replay table
         if outpost.replays:
@@ -72,10 +72,10 @@ def aws_lambda_handler(
     return wrapper
 
 
-def aws_lambda_replay_handler(file, 
-                              name=None, 
-                              record_wrapper=None, 
-                              before_request=None, 
+def aws_lambda_replay_handler(file,
+                              name=None,
+                              record_wrapper=None,
+                              before_request=None,
                               sentry_dsn=None
     ):
     if sentry_dsn:
@@ -88,13 +88,13 @@ def aws_lambda_replay_handler(file,
 
     def wrapper(event=None, context=None):
         function = main_aws_lambda_handler(
-            file = file, 
-            name = name, 
-            record_wrapper=record_wrapper, 
-            before_request=before_request, 
+            file = file,
+            name = name,
+            record_wrapper=record_wrapper,
+            before_request=before_request,
             send_sentry=(sentry_dsn is not None)
             )
-            
+
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
             record = decompress_json(item["record"])

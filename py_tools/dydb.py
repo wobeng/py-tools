@@ -30,7 +30,7 @@ class JSONAttribute(JSONA):
 
     def deserialize(self, value):
         return format.loads(value)
-    
+
 class DynamicMapAttribute(MapAttribute):
 
     element_type = None
@@ -352,6 +352,6 @@ class TransactWrite(_TransactWrite):
 
         if condition is None:
             return
-        
+
         return super(TransactWrite, self).condition_check(
             model_cls, hash_key, range_key, condition)
