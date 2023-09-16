@@ -5,9 +5,10 @@ logger = get_logger("py-tools.request")
 
 
 class Request:
-    def __init__(self, token, base_url):
+    def __init__(self, token, base_url, skip_logging_codes=None):
         self.token = token
         self.base_url = base_url
+        self.skip_logging_codes = skip_logging_codes or []
 
     def __call__(self, token, base_url):
         if token:
@@ -22,20 +23,20 @@ class Request:
 
         response = self.make_request(method, url, headers=headers, **kwargs)
 
-        if not response.ok:
-            attrs = {
-                "method": method,
-                "path": path,
-                "status_code": response.status_code,
-                "text": response.text,
-            }
-            for k, v in attrs.items():
-                logger.info("Failed %s: %s" % (k, v))
+        if not response.ok and response.status_code not in self.skip_logging_codes:
+            self.log_response(method, path, response)
+
         return response
 
     def make_request(self, method, url, **kwargs):
         return getattr(requests, method)(url=url, **kwargs)
 
-    def handle_response(self, response):
-        if not response.ok:
-            logger.debug(response.text)
+    def log_response(self, method, path, response):
+        attrs = {
+            "method": method,
+            "path": path,
+            "status_code": response.status_code,
+            "text": response.text,
+        }
+        for k, v in attrs.items():
+            logger.info("Failed %s: %s" % (k, v))
