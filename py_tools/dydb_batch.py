@@ -39,12 +39,21 @@ class DynamoDbBatch:
         self.client = dynamodb_client
         self.resource_client = dynamodb_resource
         self.request_items = {}
+        self.get_items_keys = {}
+        self.get_serialized_items = {}
 
     @projection_string
-    def get_item(self, table, keys, **kwargs):
-        kwargs["Keys"] = [serialize_input(k) for k in keys]
-        self.request_items[table] = kwargs
-        return self
+    def get_item(self, table, key, **kwargs):
+        if table not in self.get_items_keys:
+            self.get_items_keys[table] = set()
+            self.get_serialized_items[table] = {"Keys": []}
+        key_frozenset = frozenset(key.items())
+        if key_frozenset not in self.get_items_keys[table]:
+            # logger.info("Queuing get item %s to table %s" % (dumps(key), table))
+            self.get_items_keys[table].add(key_frozenset)
+            self.get_serialized_items[table]["Keys"].append(
+                serialize_input(key))
+            self.get_serialized_items[table].update(kwargs)
 
     def post_item(self, table, item):
         if table not in self.request_items:
@@ -57,7 +66,8 @@ class DynamoDbBatch:
     def delete_item(self, table, key):
         if table not in self.request_items:
             self.request_items[table] = []
-        logger.info("Queuing delelte item %s to table %s" % (dumps(key), table))
+        logger.info("Queuing delelte item %s to table %s" %
+                    (dumps(key), table))
         self.request_items[table].append(
             {"delete_item": {"Key": key}}
         )
@@ -65,7 +75,9 @@ class DynamoDbBatch:
     def batch_read(self):
         n = 0
         results = {}
-        response = self.client.batch_get_item(RequestItems=self.request_items)
+        # serialize
+        response = self.client.batch_get_item(
+            RequestItems=self.get_serialized_items)
         results.update(response["Responses"])
         while response["UnprocessedKeys"]:
             # Implement some kind of exponential back off here
@@ -79,7 +91,6 @@ class DynamoDbBatch:
             results[table] = [deserialize_output(r) for r in records]
         return results
 
-
     def batch_write(self):
         table_ct, delete_ct, put_ct = 0, 0, 0
         for table_name, records in self.request_items.items():
@@ -90,13 +101,16 @@ class DynamoDbBatch:
                     if "put_item" in record:
                         put_ct += 1
                         item = record["put_item"]["Item"]
-                        logger.info("Adding item %s to table %s" % (dumps(item), table_name))
+                        logger.info("Adding item %s to table %s" %
+                                    (dumps(item), table_name))
                         if not self.dry_run:
                             batch.put_item(Item=item)
                     elif "delete_item" in record:
                         delete_ct += 1
                         key = record["delete_item"]["Key"]
-                        logger.info("Deleting key %s from table %s" % (dumps(key), table_name))
+                        logger.info("Deleting key %s from table %s" %
+                                    (dumps(key), table_name))
                         if not self.dry_run:
                             batch.delete_item(Key=key)
-        logger.info("Wrote %s items and deleted %s items from %s tables" % (put_ct, delete_ct, table_ct))
+        logger.info("Wrote %s items and deleted %s items from %s tables" %
+                    (put_ct, delete_ct, table_ct))
