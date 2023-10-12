@@ -126,6 +126,7 @@ class Slack:
             if "channel" in slack_ts:
                 self.channel_id = self.get_channel_id(slack_ts["channel"])
                 slack_ts = slack_ts["ts"]
+            response = None  # Initialize response here
             while slack_ts:
                 try:
                     response = self.client.conversations_replies(
