@@ -122,22 +122,23 @@ class Slack:
         if self.user_token:
             self.client = WebClient(self.user_token)
             as_user = True
+
         for slack_ts in slack_messages:
             if "channel" in slack_ts:
                 self.channel_id = self.get_channel_id(slack_ts["channel"])
                 slack_ts = slack_ts["ts"]
-            response = None  # Initialize response here
+
             while slack_ts:
                 try:
                     response = self.client.conversations_replies(
                         ts=slack_ts, limit=999, channel=self.channel_id
                     )
+                    for message in response["messages"]:
+                        if message["ts"] != slack_ts:
+                            self.try_and_delete_message(message["ts"], as_user)
+                    if not response["has_more"]:
+                        break
                 except errors.SlackApiError as e:
                     if e.response["error"] == "thread_not_found":
                         break
-                for message in response["messages"]:
-                    if message["ts"] != slack_ts:
-                        self.try_and_delete_message(message["ts"], as_user)
-                if not response["has_more"]:
-                    break
             self.try_and_delete_message(slack_ts, as_user)
