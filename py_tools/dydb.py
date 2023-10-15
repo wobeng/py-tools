@@ -96,20 +96,20 @@ class DbModel(Model):
 
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
-        logger.info("Adding condition %s from class %s" % (condition, cls.__name__))
+        logger.debug("Adding condition %s from class %s" % (condition, cls.__name__))
         if cls.__name__ not in cls._db_conditions:
             cls._db_conditions[cls.__name__] = set()
         cls._db_conditions[cls.__name__].add(condition)
 
     @classmethod
     def _output_db_condition(cls):
-        logger.info("Getting conditions for class %s" % cls.__name__)
+        logger.debug("Getting conditions for class %s" % cls.__name__)
         items = deepcopy(cls._db_conditions.pop(cls.__name__, set()))
         if not items:
-            logger.info("Conditions is empty")
+            logger.debug("Conditions is empty")
             return None
         cond_len = len(items)
-        logger.info("Conditions contains %s items" % cond_len)
+        logger.debug("Conditions contains %s items" % cond_len)
         if cond_len == 1:
             output = next(iter(items))
         else:

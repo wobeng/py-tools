@@ -49,7 +49,7 @@ class DynamoDbBatch:
             self.get_serialized_items[table] = {"Keys": []}
         key_frozenset = frozenset(key.items())
         if key_frozenset not in self.get_items_keys[table]:
-            # logger.info("Queuing get item %s to table %s" % (dumps(key), table))
+            # logger.debug("Queuing get item %s to table %s" % (dumps(key), table))
             self.get_items_keys[table].add(key_frozenset)
             self.get_serialized_items[table]["Keys"].append(
                 serialize_input(key))
@@ -58,7 +58,7 @@ class DynamoDbBatch:
     def post_item(self, table, item):
         if table not in self.request_items:
             self.request_items[table] = []
-        logger.info("Queuing put item %s to table %s" % (dumps(item), table))
+        logger.debug("Queuing put item %s to table %s" % (dumps(item), table))
         self.request_items[table].append(
             {"put_item": {"Item": item}}
         )
@@ -66,7 +66,7 @@ class DynamoDbBatch:
     def delete_item(self, table, key):
         if table not in self.request_items:
             self.request_items[table] = []
-        logger.info("Queuing delelte item %s to table %s" %
+        logger.debug("Queuing delelte item %s to table %s" %
                     (dumps(key), table))
         self.request_items[table].append(
             {"delete_item": {"Key": key}}
@@ -101,16 +101,16 @@ class DynamoDbBatch:
                     if "put_item" in record:
                         put_ct += 1
                         item = record["put_item"]["Item"]
-                        logger.info("Adding item %s to table %s" %
+                        logger.debug("Adding item %s to table %s" %
                                     (dumps(item), table_name))
                         if not self.dry_run:
                             batch.put_item(Item=item)
                     elif "delete_item" in record:
                         delete_ct += 1
                         key = record["delete_item"]["Key"]
-                        logger.info("Deleting key %s from table %s" %
+                        logger.debug("Deleting key %s from table %s" %
                                     (dumps(key), table_name))
                         if not self.dry_run:
                             batch.delete_item(Key=key)
-        logger.info("Wrote %s items and deleted %s items from %s tables" %
+        logger.debug("Wrote %s items and deleted %s items from %s tables" %
                     (put_ct, delete_ct, table_ct))

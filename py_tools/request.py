@@ -40,4 +40,4 @@ class Request:
             "text": response.text,
         }
         for k, v in attrs.items():
-            logger.info("Failed %s: %s" % (k, v))
+            logger.debug("Failed %s: %s" % (k, v))
