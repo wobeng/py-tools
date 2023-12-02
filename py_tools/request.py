@@ -25,7 +25,7 @@ class Request:
 
         if not response.ok and response.status_code not in self.skip_logging_codes:
             self.log_response(method, path, response)
-            self.response.raise_for_status()
+            response.raise_for_status()
 
         return response
 
