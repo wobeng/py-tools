@@ -18,9 +18,8 @@ def id_generator(prefix=""):
 def formatted_time(datetime_obj=None):
     # Getting the current time and formatting it without microseconds
     datetime_obj = datetime_obj or datetime_utc()
-    datetime_obj = datetime_obj.replace(microsecond=0)
     # Converting to ISO 8601 format without special characters
-    return datetime_obj.isoformat().replace("-", "").replace(":", "").replace("T", "").replace("Z", "")
+    return datetime_obj.strftime("%Y%m%d%H%M%S")
 
 def date_id(prefix="", sep="::"):
     def wrapper(pre=prefix):
