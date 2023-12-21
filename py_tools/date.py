@@ -10,19 +10,24 @@ def datetime_utc(dt=None):
     return dt.replace(tzinfo=UTC)
 
 
-def id_generator(pre=""):
-    return pre + str(uuid.uuid4()).replace("-", "")[-14:]
+def id_generator(prefix=""):
+    def wrapper(pre=prefix):
+        return pre + str(uuid.uuid4()).replace("-", "")[-14:]
+    return wrapper
 
+def formatted_time(datetime_obj=None):
+    # Getting the current time and formatting it without microseconds
+    datetime_obj = datetime_obj or datetime_utc()
+    datetime_obj = datetime_obj.replace(microsecond=0)
+    # Converting to ISO 8601 format without special characters
+    return datetime_obj.isoformat().replace("-", "").replace(":", "").replace("T", "").replace("Z", "")
 
 def date_id(prefix="", sep="::"):
-    def call(pre=prefix):
-        # Getting the current time and formatting it without microseconds
-        current_time = datetime.now().replace(tzinfo=None, microsecond=0)
-        # Converting to ISO 8601 format without special characters
-        formatted_time = current_time.isoformat().replace("-", "").replace(":", "").replace("T", "").replace("Z", "")
-        suf = formatted_time + "_" +  id_generator()
+    def wrapper(pre=prefix):
+        f_time = formatted_time()
+        suf = f_time + "_" +  id_generator()()
         if pre:
             pre = pre + sep
         return pre + suf
 
-    return call
+    return wrapper
