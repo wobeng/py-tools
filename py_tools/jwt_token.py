@@ -5,7 +5,7 @@ from jwcrypto import jwt, jwk
 
 def encode_token(payload, secret=""):
     key = jwk.JWK(k=secret, kty="oct")
-    token = jwt.JWT(header={"alg": "HS256"}, claims=payload)
+    token = jwt.JWT(header={"alg": "HS256", "typ": "JWT"}, claims=payload)
     token.make_signed_token(key)
     output = token.serialize()
     if isinstance(output, str):
