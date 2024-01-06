@@ -34,8 +34,13 @@ def execute_output(command, quiet=False, quiet_err=False, output_json=True, log_
     if log_command:
         logger.info("command: %s" % command)
 
-    output = subprocess.check_output(command, **kwargs)
-    output = output.decode("utf-8")  # Explicitly decode using UTF-8
+    try:
+        output = subprocess.check_output(command, **kwargs)
+        output = output.decode('utf-8')  # Explicitly decode using UTF-8
+    except subprocess.CalledProcessError as e:
+        logger.info("error executing command: %s" % e)
+        logger.info("command output: %s" % e.output)
+        raise
 
     if not output_json:
         return output
