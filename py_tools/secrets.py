@@ -40,7 +40,7 @@ def load_env(caller_file):
     env_path = os.path.join(caller_directory, '.env')
 
     # Load the .env file from the caller's directory
-    load_dotenv(env_path)
+    load_dotenv(env_path, override=True)
 
 
 def load_secret_manager(
