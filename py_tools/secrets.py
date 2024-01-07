@@ -32,11 +32,19 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     return output
 
 
-def load_env():
-    load_dotenv()  # take environment variables from .env.
+def load_env(caller_file):
+    # Get the directory of the caller's script
+    caller_directory = os.path.dirname(os.path.abspath(caller_file))
+
+    # Construct the path to the .env file in the caller's directory
+    env_path = os.path.join(caller_directory, '.env')
+
+    # Load the .env file from the caller's directory
+    load_dotenv(env_path)
 
 
 def load_secret_manager(
+    caller_file,
     secret_names,
     names=None,
     load=True,
@@ -62,6 +70,6 @@ def load_secret_manager(
 
     secrets = {k: replace_value(v) for k, v in secrets.items()}
 
-    load_env()
+    load_env(caller_file)
 
     return secrets
