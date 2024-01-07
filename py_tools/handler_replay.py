@@ -44,18 +44,19 @@ def aws_lambda_handler(
         sentry_sdk.init(
             dsn=sentry_dsn,
             integrations=[AwsLambdaIntegration(timeout_warning=True)],
-             environment=os.environ["ENVIRONMENT"]
+            environment=os.environ["ENVIRONMENT"],
+            release=os.environ["RELEASE"]
         )
 
     def wrapper(event, context=None):
 
         function = main_aws_lambda_handler(
-            file = file,
-            name = name,
+            file=file,
+            name=name,
             record_wrapper=record_wrapper,
             before_request=before_request,
             send_sentry=(sentry_dsn is not None)
-            )
+        )
 
         outpost = function(event, context)
         # add to replay table
@@ -77,23 +78,24 @@ def aws_lambda_replay_handler(file,
                               record_wrapper=None,
                               before_request=None,
                               sentry_dsn=None
-    ):
+                              ):
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
             integrations=[AwsLambdaIntegration(timeout_warning=True)],
-            environment=os.environ["ENVIRONMENT"]
+            environment=os.environ["ENVIRONMENT"],
+            release=os.environ["RELEASE"]
         )
     file = file.replace("/adhoc/", "/")
 
     def wrapper(event=None, context=None):
         function = main_aws_lambda_handler(
-            file = file,
-            name = name,
+            file=file,
+            name=name,
             record_wrapper=record_wrapper,
             before_request=before_request,
             send_sentry=(sentry_dsn is not None)
-            )
+        )
 
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
