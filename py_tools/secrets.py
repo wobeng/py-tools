@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import os
 
 import boto3
@@ -19,7 +20,8 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
     if names:
         response = ssm_client.get_parameters(Names=names, WithDecryption=True)
     else:
-        response = ssm_client.get_parameters_by_path(Path=path, WithDecryption=True)
+        response = ssm_client.get_parameters_by_path(
+            Path=path, WithDecryption=True)
     output = {}
     for parameter in response["Parameters"]:
         output[parameter["Name"].split("/")[-1]] = parameter["Value"]
@@ -28,6 +30,10 @@ def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
             os.environ[k] = v
     output = {k: replace_value(v) for k, v in output.items()}
     return output
+
+
+def load_env():
+    load_dotenv()  # take environment variables from .env.
 
 
 def load_secret_manager(
@@ -40,7 +46,8 @@ def load_secret_manager(
     secrets_client = secrets_client or boto3.Session().client("secretsmanager")
     secrets = {}
     for secret_name in secret_names.split(","):
-        secret = secrets_client.get_secret_value(SecretId=secret_name)["SecretString"]
+        secret = secrets_client.get_secret_value(
+            SecretId=secret_name)["SecretString"]
         secret = format.loads(secret)
         secrets.update(secret)
     if names:
@@ -54,4 +61,7 @@ def load_secret_manager(
                     os.environ[key] = value
 
     secrets = {k: replace_value(v) for k, v in secrets.items()}
+
+    load_env()
+
     return secrets

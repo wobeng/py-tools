@@ -23,6 +23,7 @@ setup(
         "backoff",
         "pynamodb",
         "bcrypt",
-        "sentry-sdk"
+        "sentry-sdk",
+        "python-dotenv"
     ],
 )
