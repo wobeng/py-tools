@@ -36,7 +36,8 @@ def execute_output(command, quiet=False, quiet_err=False, output_json=True, log_
 
     try:
         output = subprocess.check_output(command, **kwargs)
-        output = output.decode('utf-8')  # Explicitly decode using UTF-8
+        # Explicitly decode using UTF-8
+        output = output.decode('utf-8').rstrip()
     except subprocess.CalledProcessError as e:
         logger.info("error executing command: %s" % e)
         logger.info("command output: %s" % e.output)
