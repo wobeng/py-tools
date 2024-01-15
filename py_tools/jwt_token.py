@@ -4,7 +4,7 @@ from jwcrypto import jwt, jwk
 
 
 def encode_token(payload, secret=""):
-    key = jwk.JWK(k=secret, kty="oct")
+    key = jwk.JWK().from_password(secret)
     token = jwt.JWT(header={"alg": "HS256", "typ": "JWT"}, claims=payload)
     token.make_signed_token(key)
     output = token.serialize()
