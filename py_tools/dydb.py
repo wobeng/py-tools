@@ -14,11 +14,13 @@ from py_tools.pylog import get_logger
 
 logger = get_logger("py-tools.dydb", log_console=False)
 
+
 class ModelEncoder(format.ModelEncoder):
     def default(self, obj):
         if hasattr(obj, "attribute_values"):
             return obj.attribute_values
         return super(ModelEncoder, self).default(obj)
+
 
 class JSONAttribute(JSONA):
 
@@ -30,6 +32,7 @@ class JSONAttribute(JSONA):
 
     def deserialize(self, value):
         return format.loads(value)
+
 
 class DynamicMapAttribute(MapAttribute):
 
@@ -96,15 +99,17 @@ class DbModel(Model):
 
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
-        logger.debug("Adding condition %s from class %s" % (condition, cls.__name__))
+        logger.debug("Adding condition %s from class %s" %
+                     (condition, cls.__name__))
         if cls.__name__ not in cls._db_conditions:
-            cls._db_conditions[cls.__name__] = set()
-        cls._db_conditions[cls.__name__].add(condition)
+            cls._db_conditions[cls.__name__] = []
+        if condition not in cls._db_conditions[cls.__name__]:
+            cls._db_conditions[cls.__name__].append(condition)
 
     @classmethod
     def _output_db_condition(cls):
         logger.debug("Getting conditions for class %s" % cls.__name__)
-        items = deepcopy(cls._db_conditions.pop(cls.__name__, set()))
+        items = deepcopy(cls._db_conditions.pop(cls.__name__, []))
         if not items:
             logger.debug("Conditions is empty")
             return None
