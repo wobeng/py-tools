@@ -14,3 +14,4 @@ pre-commit
 bcrypt
 sentry-sdk
 python-dotenv
+pyjwt

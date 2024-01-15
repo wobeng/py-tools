@@ -24,6 +24,7 @@ setup(
         "pynamodb",
         "bcrypt",
         "sentry-sdk",
-        "python-dotenv"
+        "python-dotenv",
+        "pyjwt"
     ],
 )
