@@ -103,8 +103,7 @@ class DbModel(Model):
                      (condition, cls.__name__))
         if cls.__name__ not in cls._db_conditions:
             cls._db_conditions[cls.__name__] = []
-        if condition not in cls._db_conditions[cls.__name__]:
-            cls._db_conditions[cls.__name__].append(condition)
+        cls._db_conditions[cls.__name__].append(condition)
 
     @classmethod
     def _output_db_condition(cls):
