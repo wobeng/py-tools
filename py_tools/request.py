@@ -8,7 +8,7 @@ class Request:
     def __init__(self, token, base_url, skip_logging_codes=None):
         self.token = token
         self.base_url = base_url
-        self.skip_logging_codes = skip_logging_codes or []
+        self.skip_logging_codes = skip_logging_codes or {}
 
     def __call__(self, token, base_url):
         if token:
@@ -23,9 +23,11 @@ class Request:
 
         response = self.make_request(method, url, headers=headers, **kwargs)
 
-        if not response.ok and response.status_code not in self.skip_logging_codes:
-            self.log_response(method, path, response)
-            response.raise_for_status()
+        if not response.ok:
+            errors = self.skip_logging_codes.get(method.lower(), [])
+            if response.status_code not in errors:
+                self.log_response(method, path, response)
+                response.raise_for_status()
 
         return response
 
