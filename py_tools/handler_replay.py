@@ -8,6 +8,8 @@ from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 import gzip
 import base64
 from py_tools.format import loads
+from sentry_sdk.integrations.logging import LoggingIntegration
+import logging
 
 
 def decompress_json(compressed_string):
@@ -41,9 +43,13 @@ def aws_lambda_handler(
     sentry_dsn=None,
 ):
     if sentry_dsn:
+        sentry_logging = LoggingIntegration(
+            level=logging.DEBUG if os.environ["ENVIRONMENT"] == "develop" else logging.INFO,
+            event_level=logging.ERROR
+        )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
             release=os.environ["RELEASE"]
         )
@@ -80,9 +86,13 @@ def aws_lambda_replay_handler(file,
                               sentry_dsn=None
                               ):
     if sentry_dsn:
+        sentry_logging = LoggingIntegration(
+            level=logging.DEBUG if os.environ["ENVIRONMENT"] == "develop" else logging.INFO,
+            event_level=logging.ERROR
+        )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True)],
+            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
             release=os.environ["RELEASE"]
         )
