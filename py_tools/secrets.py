@@ -51,6 +51,9 @@ def load_secret_manager(
     secrets_client=None,
     force=False,
 ):
+
+    load_env(caller_file)
+
     secrets_client = secrets_client or boto3.Session().client("secretsmanager")
     secrets = {}
     for secret_name in secret_names.split(","):
@@ -69,7 +72,5 @@ def load_secret_manager(
                     os.environ[key] = value
 
     secrets = {k: replace_value(v) for k, v in secrets.items()}
-
-    load_env(caller_file)
 
     return secrets
