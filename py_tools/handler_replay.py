@@ -49,9 +49,10 @@ def aws_lambda_handler(
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(
+                timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
-            release=os.environ["RELEASE"]
+            release=os.environ("RELEASE", "")
         )
 
     def wrapper(event, context=None):
@@ -92,9 +93,10 @@ def aws_lambda_replay_handler(file,
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(
+                timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
-            release=os.environ["RELEASE"]
+            release=os.environ("RELEASE", "")
         )
     file = file.replace("/adhoc/", "/")
 
