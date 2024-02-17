@@ -49,6 +49,7 @@ def aws_lambda_handler(
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
+            send_default_pii=False,
             integrations=[AwsLambdaIntegration(
                 timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
