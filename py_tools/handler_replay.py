@@ -41,6 +41,7 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None,
     sentry_dsn=None,
+    send_default_pii=False
 ):
     if sentry_dsn:
         sentry_logging = LoggingIntegration(
@@ -49,7 +50,7 @@ def aws_lambda_handler(
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            send_default_pii=False,
+            send_default_pii=send_default_pii,
             integrations=[AwsLambdaIntegration(
                 timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
