@@ -24,8 +24,10 @@ def execute_call(
 
     code = subprocess.call(command, **kwargs)
 
+    if code != 0:
+        logger.info("command failed: %s with status code %s" % (command, code))
+
     if code != 0 and exit_script:
-        logger.info("command: %s" % command)
         sys.exit(int(code))
 
     return code
