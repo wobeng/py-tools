@@ -7,8 +7,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def execute_call(command, quiet=True, quiet_err=False, exit_script=True, log_command=False):
-    kwargs = {"shell": True}
+def execute_call(
+    command, quiet=True, quiet_err=False, exit_script=True, log_command=False, **kwargs
+):
+    if isinstance(command, list):
+        command = " ".join(command)
+
+    kwargs["shell"] = True
+
     if quiet:
         kwargs["stdout"] = subprocess.DEVNULL
     if quiet_err:
@@ -25,8 +31,14 @@ def execute_call(command, quiet=True, quiet_err=False, exit_script=True, log_com
     return code
 
 
-def execute_output(command, quiet=False, quiet_err=False, output_json=True, log_command=False):
-    kwargs = {"shell": True}
+def execute_output(
+    command, quiet=False, quiet_err=False, output_json=True, log_command=False, **kwargs
+):
+    if isinstance(command, list):
+        command = " ".join(command)
+
+    kwargs["shell"] = True
+
     if quiet:
         kwargs["stdout"] = subprocess.DEVNULL
     if quiet_err:
@@ -37,7 +49,7 @@ def execute_output(command, quiet=False, quiet_err=False, output_json=True, log_
     try:
         output = subprocess.check_output(command, **kwargs)
         # Explicitly decode using UTF-8
-        output = output.decode('utf-8').rstrip()
+        output = output.decode("utf-8").rstrip()
     except subprocess.CalledProcessError as e:
         logger.info("error executing command: %s" % e)
         logger.info("command output: %s" % e.output)
