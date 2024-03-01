@@ -18,7 +18,9 @@ def execute_call(
     if quiet:
         kwargs["stdout"] = subprocess.DEVNULL
     if quiet_err:
-        kwargs["stderr"] = subprocess.DEVNULL
+        kwargs["stderr"] = subprocess.PIPE
+    else:
+        kwargs["stderr"] = subprocess.STDOUT
     if log_command:
         logger.info("command: %s" % command)
 
@@ -44,7 +46,9 @@ def execute_output(
     if quiet:
         kwargs["stdout"] = subprocess.DEVNULL
     if quiet_err:
-        kwargs["stderr"] = subprocess.DEVNULL
+        kwargs["stderr"] = subprocess.PIPE
+    else:
+        kwargs["stderr"] = subprocess.STDOUT
     if log_command:
         logger.info("command: %s" % command)
 
