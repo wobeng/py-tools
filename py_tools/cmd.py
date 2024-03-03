@@ -1,10 +1,9 @@
 import json
 import subprocess
 import sys
-import logging
+from py_tools.pylog import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger("py-tools.cmd")
 
 
 def execute_call(

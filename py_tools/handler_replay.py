@@ -27,9 +27,7 @@ class ReplayBin(DbModel):
         table_name = "ReplayBin"
 
     bin = UnicodeAttribute(hash_key=True)
-    replay_id = UnicodeAttribute(
-        default_for_new=date_id(nickname), range_key=True
-    )
+    replay_id = UnicodeAttribute(default_for_new=date_id(nickname), range_key=True)
     run_count = NumberAttribute(default=1)
     record = UnicodeAttribute()
     reason = UnicodeAttribute()
@@ -41,30 +39,30 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None,
     sentry_dsn=None,
-    send_default_pii=False
+    send_default_pii=False,
 ):
     if sentry_dsn:
         sentry_logging = LoggingIntegration(
-            level=logging.DEBUG if os.environ["ENVIRONMENT"] == "develop" else logging.INFO,
-            event_level=logging.ERROR
+            level=logging.DEBUG
+            if os.environ["ENVIRONMENT"] == "develop"
+            else logging.INFO,
+            event_level=logging.WARNING,
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
             send_default_pii=send_default_pii,
-            integrations=[AwsLambdaIntegration(
-                timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
-            release=os.environ.get("RELEASE", "")
+            release=os.environ.get("RELEASE", ""),
         )
 
     def wrapper(event, context=None):
-
         function = main_aws_lambda_handler(
             file=file,
             name=name,
             record_wrapper=record_wrapper,
             before_request=before_request,
-            send_sentry=(sentry_dsn is not None)
+            send_sentry=(sentry_dsn is not None),
         )
 
         outpost = function(event, context)
@@ -82,23 +80,21 @@ def aws_lambda_handler(
     return wrapper
 
 
-def aws_lambda_replay_handler(file,
-                              name=None,
-                              record_wrapper=None,
-                              before_request=None,
-                              sentry_dsn=None
-                              ):
+def aws_lambda_replay_handler(
+    file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None
+):
     if sentry_dsn:
         sentry_logging = LoggingIntegration(
-            level=logging.DEBUG if os.environ["ENVIRONMENT"] == "develop" else logging.INFO,
-            event_level=logging.ERROR
+            level=logging.DEBUG
+            if os.environ["ENVIRONMENT"] == "develop"
+            else logging.INFO,
+            event_level=logging.WARNING,
         )
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(
-                timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
             environment=os.environ["ENVIRONMENT"],
-            release=os.environ.get("RELEASE", "")
+            release=os.environ.get("RELEASE", ""),
         )
     file = file.replace("/adhoc/", "/")
 
@@ -108,7 +104,7 @@ def aws_lambda_replay_handler(file,
             name=name,
             record_wrapper=record_wrapper,
             before_request=before_request,
-            send_sentry=(sentry_dsn is not None)
+            send_sentry=(sentry_dsn is not None),
         )
 
         for item in ReplayBin.query(hash_key=name, limit=10):
@@ -119,14 +115,10 @@ def aws_lambda_replay_handler(file,
 
             if outpost.replays:
                 ReplayBin.update_item(
-                    hash_key=name,
-                    range_key=item["replay_id"],
-                    adds={"run_count": 1}
+                    hash_key=name, range_key=item["replay_id"], adds={"run_count": 1}
                 )
                 return  # return early for events to process in order
             else:
-                ReplayBin.delete_item(
-                    hash_key=name,
-                    range_key=item["replay_id"]
-                )
+                ReplayBin.delete_item(hash_key=name, range_key=item["replay_id"])
+
     return wrapper

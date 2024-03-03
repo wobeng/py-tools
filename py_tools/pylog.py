@@ -3,8 +3,7 @@ import sys
 from logging.handlers import TimedRotatingFileHandler
 import os
 
-FORMATTER = logging.Formatter(
-    "%(asctime)s — %(name)s — %(levelname)s — %(message)s")
+FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
 
 
 def get_console_handler():
@@ -22,7 +21,7 @@ def get_file_handler(name):
 def get_logger(logger_name=None, log_console=True, log_file=False):
     logger = logging.getLogger(logger_name)
     logger.propagate = True if not log_file else False
-    if os.environ.get("ENVIRONMENT","master") == "master":
+    if os.environ.get("ENVIRONMENT", "master") == "master":
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.DEBUG)
@@ -33,6 +32,7 @@ def get_logger(logger_name=None, log_console=True, log_file=False):
             log_dir = ".logs"
             if not os.path.exists(log_dir):
                 os.mkdir(log_dir)
-            logger.addHandler(get_file_handler(
-                os.path.join(log_dir, logger_name + ".log")))
+            logger.addHandler(
+                get_file_handler(os.path.join(log_dir, logger_name + ".log"))
+            )
     return logger
