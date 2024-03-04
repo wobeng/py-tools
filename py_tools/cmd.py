@@ -35,7 +35,13 @@ def execute_call(
 
 
 def execute_output(
-    command, quiet=False, quiet_err=False, output_json=True, log_command=False, **kwargs
+    command,
+    quiet=False,
+    quiet_err=False,
+    output_json=True,
+    log_command=False,
+    exit_script=False,
+    **kwargs,
 ):
     if isinstance(command, list):
         command = " ".join(command)
@@ -58,7 +64,10 @@ def execute_output(
     except subprocess.CalledProcessError as e:
         logger.info("error executing command: %s" % e)
         logger.info("command output: %s" % e.output)
-        raise
+        if exit_script:
+            sys.exit(0)
+        else:
+            raise
 
     if not output_json:
         return output
