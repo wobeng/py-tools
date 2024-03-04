@@ -40,7 +40,6 @@ def execute_output(
     quiet_err=False,
     output_json=True,
     log_command=False,
-    exit_script=False,
     **kwargs,
 ):
     if isinstance(command, list):
@@ -62,12 +61,9 @@ def execute_output(
         # Explicitly decode using UTF-8
         output = output.decode("utf-8").rstrip()
     except subprocess.CalledProcessError as e:
-        logger.info("error executing command: %s" % e)
-        logger.info("command output: %s" % e.output)
-        if exit_script:
-            sys.exit(0)
-        else:
-            raise
+        logger.info("command failed: %s" % e)
+        logger.info("command output: %s" % e.output.decode("utf-8"))
+        raise
 
     if not output_json:
         return output

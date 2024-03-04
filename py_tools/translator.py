@@ -35,9 +35,4 @@ class TranslationCostCalculator:
         logger.info(
             f"Session total characters: {self.total_characters}. Session total cost: {total_cost}"
         )
-        # warn if total cost is above $1
-        if total_cost > 1:
-            logger.warning(
-                f"Total cost for this session is over $1.00. Total cost: {total_cost}"
-            )
         return self.total_characters, total_cost
