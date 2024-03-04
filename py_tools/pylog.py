@@ -18,10 +18,12 @@ def get_file_handler(name):
     return file_handler
 
 
-def get_logger(logger_name=None, log_console=True, log_file=False):
+def get_logger(logger_name=None, log_console=True, log_file=False, env=None):
+    if not env:
+        env = os.environ.get("ENVIRONMENT", "master")
     logger = logging.getLogger(logger_name)
     logger.propagate = True if not log_file else False
-    if os.environ.get("ENVIRONMENT", "master") == "master":
+    if env == "master":
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.DEBUG)
