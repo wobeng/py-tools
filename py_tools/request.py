@@ -2,8 +2,7 @@ import requests
 from py_tools.pylog import get_logger
 import time
 import random
-from urllib.parse import urljoin
-import os
+
 logger = get_logger("py-tools.request")
 
 
@@ -59,7 +58,7 @@ class Request:
         raise Exception(f"Request failed after {max_retries} retries")
 
     def log_response(self, method, path, response):
-        logger.error(
+        logger.info(
             "Request %s:%s failed with code %s" % (method, path, response.status_code),
             extra={"text": response.text},
         )
