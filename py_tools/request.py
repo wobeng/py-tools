@@ -54,7 +54,6 @@ class Request:
                 self.log_response(method, url, response)
                 if response.status_code not in error_codes:
                     # Handle other HTTP errors or raise an exception
-                    print(response.text)
                     response.raise_for_status()
 
         raise Exception(f"Request failed after {max_retries} retries")
