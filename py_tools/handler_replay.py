@@ -46,7 +46,7 @@ def aws_lambda_handler(
         sentry_sdk.init(
             dsn=sentry_dsn,
             send_default_pii=send_default_pii,
-            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(), sentry_logging],
             environment=os.environ.get("ENVIRONMENT", "develop"),
             release=os.environ.get("RELEASE", ""),
         )
@@ -82,7 +82,7 @@ def aws_lambda_replay_handler(
         sentry_logging = LoggingIntegration(level=logging.DEBUG)
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(timeout_warning=True), sentry_logging],
+            integrations=[AwsLambdaIntegration(), sentry_logging],
             environment=os.environ.get("ENVIRONMENT", "develop"),
             release=os.environ.get("RELEASE", ""),
         )
