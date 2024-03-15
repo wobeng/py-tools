@@ -33,7 +33,7 @@ class Slack:
                 self.channel_id = channel["channel"]["id"]
 
                 # invite all admins to the channel
-                all_members = [u["id"] for u in self.client.users_list()["members"]]
+                all_members = [u for u in self.client.users_list()["members"]]
                 admins = [
                     u["id"]
                     for u in all_members
