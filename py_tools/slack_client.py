@@ -8,7 +8,7 @@ import tempfile
 
 from py_tools.pylog import get_logger
 
-logger = get_logger("py-tools.slack",  log_console=False)
+logger = get_logger("py-tools.slack", log_console=False)
 
 
 class Slack:
@@ -18,23 +18,39 @@ class Slack:
         self.user_token = user_token
         self.channel_name = channel_name
 
-        if channel_name:
+        while not self.channel_id:
             self.channel_id = self.get_channel_id(channel_name)
 
-        if not self.channel_id:
-            self.channel_id = self.client.conversations_create(
-                name=channel_name.lower(), is_private=True
-            )["channel"]["id"]
-            admins = [
-                u["id"]
-                for u in self.client.users_list()["members"]
-                if u.get("is_admin") or u.get("is_owner")
-            ]
-            self.client.conversations_invite(channel=self.channel_id, users=admins)
+            if self.channel_id:
+                break
+
+            try:
+                channel = self.client.conversations_create(
+                    name=channel_name.lower(), is_private=True
+                )
+
+                # set the channel id
+                self.channel_id = channel["channel"]["id"]
+
+                # invite all admins to the channel
+                all_members = [u["id"] for u in self.client.users_list()["members"]]
+                admins = [
+                    u["id"]
+                    for u in all_members
+                    if u.get("is_admin") or u.get("is_owner")
+                ]
+
+                self.client.conversations_invite(channel=self.channel_id, users=admins)
+                break
+
+            except errors.SlackApiError as e:
+                if e.response["error"] == "name_taken":
+                    continue
+                raise e
 
     def get_channel_id(self, name):
         channels = self.client.conversations_list(
-            types="public_channel,private_channel"
+            exclude_archived=True, limit=999, types="public_channel,private_channel"
         )
 
         for channel in channels["channels"]:
