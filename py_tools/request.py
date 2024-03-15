@@ -8,7 +8,7 @@ logger = get_logger("py-tools.request")
 
 class Request:
     def __init__(self, token, base_url, headers=None, skip_logging_codes=None):
-        self.token = token
+        self.token = token or ""
         self.base_url = base_url
         self.skip_logging_codes = skip_logging_codes or {}
         headers = headers or {}
