@@ -42,11 +42,13 @@ def aws_lambda_handler(
     send_default_pii=False,
 ):
     if sentry_dsn:
-        sentry_logging = LoggingIntegration(level=logging.DEBUG)
         sentry_sdk.init(
             dsn=sentry_dsn,
             send_default_pii=send_default_pii,
-            integrations=[AwsLambdaIntegration(), sentry_logging],
+            integrations=[
+                LoggingIntegration(level=logging.DEBUG),
+                AwsLambdaIntegration(timeout_warning=True),
+            ],
             environment=os.environ.get("ENVIRONMENT", "develop"),
             release=os.environ.get("RELEASE", ""),
         )
@@ -79,10 +81,12 @@ def aws_lambda_replay_handler(
     file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None
 ):
     if sentry_dsn:
-        sentry_logging = LoggingIntegration(level=logging.DEBUG)
         sentry_sdk.init(
             dsn=sentry_dsn,
-            integrations=[AwsLambdaIntegration(), sentry_logging],
+            integrations=[
+                LoggingIntegration(level=logging.DEBUG),
+                AwsLambdaIntegration(timeout_warning=True),
+            ],
             environment=os.environ.get("ENVIRONMENT", "develop"),
             release=os.environ.get("RELEASE", ""),
         )
