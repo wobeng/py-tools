@@ -7,10 +7,13 @@ logger = get_logger("py-tools.request")
 
 
 class Request:
-    def __init__(self, token, base_url, headers=None, skip_logging_codes=None):
+    def __init__(
+        self, token, base_url, headers=None, skip_raising_codes=None, max_retries=5
+    ):
         self.token = token or ""
         self.base_url = base_url
-        self.skip_logging_codes = skip_logging_codes or {}
+        self.max_retries = max_retries
+        self.skip_raising_codes = skip_raising_codes or {}
         headers = headers or {}
         headers["Authorization"] = f"Bearer {self.token}"
         self.headers = headers
@@ -22,12 +25,13 @@ class Request:
             self.base_url = base_url
         return self
 
-    def invoke(self, method, path, body=None, params=None, max_retries=5):
+    def invoke(self, method, path, body=None, params=None):
         retry_wait = 1  # initial wait time in seconds
         retries = 0
         url = f"{self.base_url}/{path}"
-        error_codes = self.skip_logging_codes.get(method.lower(), [])
-        while retries < max_retries:
+        skip_raising_codes = self.skip_raising_codes.get(method.lower(), [])
+
+        while retries <= self.max_retries:
             response = requests.request(
                 method=method,
                 url=url,
@@ -35,8 +39,10 @@ class Request:
                 json=body,
                 params=params,
             )
-            if response.ok:
+
+            if response.ok or response.status_code in skip_raising_codes:
                 return response
+
             elif response.status_code == 429:
                 # Check if "Retry-After" header is available
                 if "Retry-After" in response.headers:
@@ -44,18 +50,18 @@ class Request:
                 else:
                     # Implement exponential backoff with jitter
                     wait = retry_wait + random.uniform(0, 1)
-                    retry_wait *= 3  # triple the wait time for next retry
+                    retry_wait *= 2  # double the wait time for next retry
 
                 logger.info(f"Waiting {wait} seconds")
                 time.sleep(wait)
                 retries += 1
+
             else:
                 self.log_response(method, url, response)
-                if response.status_code not in error_codes:
-                    # Handle other HTTP errors or raise an exception
-                    response.raise_for_status()
+                # Handle other HTTP errors or raise an exception
+                response.raise_for_status()
 
-        raise Exception(f"Request failed after {max_retries} retries")
+        raise Exception(f"Request failed after {self.max_retries} retries")
 
     def log_response(self, method, path, response):
         logger.info(
