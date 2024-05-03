@@ -87,7 +87,7 @@ class DbModel(Model):
     def get_first(items):
         items = [i.dict() for i in items]
         if not items:
-            raise DoesNotExist()
+            raise DoesNotExist
         return items[0]
 
     @property
