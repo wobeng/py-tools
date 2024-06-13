@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+import pytz
 
 
 def datetime_utc(dt=None):
@@ -31,3 +32,20 @@ def date_id(prefix="", sep="::"):
         return pre + suf
 
     return wrapper
+
+
+def convert_date_utc(input_date, from_timezone):
+    if isinstance(input_date, str):
+        # Parse the ISO date string into a datetime object
+        input_date = datetime.fromisoformat(input_date)
+
+    # Identify the source timezone
+    source_tz = pytz.timezone(from_timezone)
+
+    # Localize the datetime object to the source timezone
+    local_time = source_tz.localize(input_date)
+
+    # Convert localized time to UTC
+    utc_time = local_time.astimezone(pytz.utc)
+
+    return utc_time
