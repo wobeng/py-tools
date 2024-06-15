@@ -10,12 +10,13 @@ class Request:
     def __init__(
         self, token, base_url, headers=None, skip_raising_codes=None, max_retries=5
     ):
-        self.token = token or ""
         self.base_url = base_url
         self.max_retries = max_retries
         self.skip_raising_codes = skip_raising_codes or {}
         headers = headers or {}
-        headers["Authorization"] = f"Bearer {self.token}"
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        self.token = token or ""
         self.headers = headers
 
     def __call__(self, token, base_url):
