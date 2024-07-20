@@ -44,7 +44,7 @@ class Request:
             if response.ok or response.status_code in skip_raising_codes:
                 return response
 
-            elif response.status_code == 429:
+            elif response.status_code in [429, 500]:
                 # Check if "Retry-After" header is available
                 if "Retry-After" in response.headers:
                     wait = int(response.headers["Retry-After"])
