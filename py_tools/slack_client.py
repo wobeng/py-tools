@@ -45,7 +45,7 @@ class Slack:
 
             except errors.SlackApiError as e:
                 if e.response["error"] == "name_taken":
-                    break
+                    continue # to get try and get the channel id again if the channel name is taken
                 raise e
 
     def get_channel_id(self, name):
