@@ -16,7 +16,8 @@ def replace_value(value):
     return value
 
 
-def get_parameters(path=None, names=None, load=False, ssm_client=ssm):
+def get_parameters(caller_file,path=None, names=None, load=False, ssm_client=ssm):
+    load_env(caller_file)
     if names:
         response = ssm_client.get_parameters(Names=names, WithDecryption=True)
     else:
