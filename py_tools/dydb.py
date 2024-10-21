@@ -5,14 +5,19 @@ from copy import deepcopy
 from py_tools.date import datetime_utc
 from typing import Any, Dict, List, Optional, Union
 
-from pynamodb.attributes import UTCDateTimeAttribute, MapAttribute, JSONAttribute as JSONA
+from pynamodb.attributes import (
+    UTCDateTimeAttribute,
+    MapAttribute,
+    JSONAttribute as JSONA,
+)
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
 from py_tools.pylog import get_logger
 
-logger = get_logger("py-tools.dydb", log_console=False)
+
+logger = get_logger("py-tools.dydb")
 
 
 class ModelEncoder(format.ModelEncoder):
@@ -23,7 +28,6 @@ class ModelEncoder(format.ModelEncoder):
 
 
 class JSONAttribute(JSONA):
-
     def serialize(self, value):
         if value is None:
             return None
@@ -35,13 +39,12 @@ class JSONAttribute(JSONA):
 
 
 class DynamicMapAttribute(MapAttribute):
-
     element_type = None
 
     def __init__(self, *args, of=None, **kwargs):
         if of:
             if not issubclass(of, MapAttribute):
-                raise ValueError("\"of\" must be subclass of MapAttribute")
+                raise ValueError('"of" must be subclass of MapAttribute')
             self.element_type = of
         super(DynamicMapAttribute, self).__init__(*args, **kwargs)
 
@@ -99,8 +102,7 @@ class DbModel(Model):
 
     @classmethod
     def add_db_conditions(cls, condition: Optional[Any]):
-        logger.debug("Adding condition %s from class %s" %
-                     (condition, cls.__name__))
+        logger.debug("Adding condition %s from class %s" % (condition, cls.__name__))
         if cls.__name__ not in cls._db_conditions:
             cls._db_conditions[cls.__name__] = []
         cls._db_conditions[cls.__name__].append(condition)
@@ -214,9 +216,9 @@ class DbModel(Model):
         actions = actions or []
         for k, v in updates.items():
             try:
-                actions.append(
-                    operator.attrgetter(k)(cls).set(v)
-                ) if isinstance(k, str) else k.set(v)
+                actions.append(operator.attrgetter(k)(cls).set(v)) if isinstance(
+                    k, str
+                ) else k.set(v)
             except AttributeError:
                 key = str(k.split(".")[-1])
                 k = k.replace("." + key, "")
@@ -253,9 +255,7 @@ class DbModel(Model):
         hash_key = hash_key or os.environ.get("HASH_KEY", None)
         cls_obj = cls(hash_key, range_key)
         cls_obj.update(
-            cls.update_attributes(
-                updates, deletes, adds, appends, prepends, actions
-            ),
+            cls.update_attributes(updates, deletes, adds, appends, prepends, actions),
             overwrite=overwrite,
         )
         return cls_obj
@@ -280,7 +280,7 @@ class DbModel(Model):
         attributes_to_get=None,
         page_size=None,
         rate_limit=None,
-        **filters
+        **filters,
     ):
         hash_key = hash_key or os.environ.get("HASH_KEY", None)
         items = super(DbModel, cls).query(
@@ -358,4 +358,5 @@ class TransactWrite(_TransactWrite):
             return
 
         return super(TransactWrite, self).condition_check(
-            model_cls, hash_key, range_key, condition)
+            model_cls, hash_key, range_key, condition
+        )

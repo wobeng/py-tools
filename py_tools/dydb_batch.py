@@ -1,15 +1,15 @@
 import random
 import time
-
 import boto3
 from py_tools.dydb_utils import deserialize_output, serialize_input
 from py_tools.pylog import get_logger
 from py_tools.format import dumps
 
+
 dynamodb_client = boto3.client("dynamodb")
 dynamodb_resource = boto3.resource("dynamodb")
-
 logger = get_logger("py-tools.dydb_batch")
+
 
 def projection_string(func):
     def wrapper(*args, **kwargs):
@@ -51,33 +51,26 @@ class DynamoDbBatch:
         if key_frozenset not in self.get_items_keys[table]:
             # logger.debug("Queuing get item %s to table %s" % (dumps(key), table))
             self.get_items_keys[table].add(key_frozenset)
-            self.get_serialized_items[table]["Keys"].append(
-                serialize_input(key))
+            self.get_serialized_items[table]["Keys"].append(serialize_input(key))
             self.get_serialized_items[table].update(kwargs)
 
     def post_item(self, table, item):
         if table not in self.request_items:
             self.request_items[table] = []
         logger.debug("Queuing put item %s to table %s" % (dumps(item), table))
-        self.request_items[table].append(
-            {"put_item": {"Item": item}}
-        )
+        self.request_items[table].append({"put_item": {"Item": item}})
 
     def delete_item(self, table, key):
         if table not in self.request_items:
             self.request_items[table] = []
-        logger.debug("Queuing delelte item %s to table %s" %
-                    (dumps(key), table))
-        self.request_items[table].append(
-            {"delete_item": {"Key": key}}
-        )
+        logger.debug("Queuing delelte item %s to table %s" % (dumps(key), table))
+        self.request_items[table].append({"delete_item": {"Key": key}})
 
     def batch_read(self):
         n = 0
         results = {}
         # serialize
-        response = self.client.batch_get_item(
-            RequestItems=self.get_serialized_items)
+        response = self.client.batch_get_item(RequestItems=self.get_serialized_items)
         results.update(response["Responses"])
         while response["UnprocessedKeys"]:
             # Implement some kind of exponential back off here
@@ -101,16 +94,20 @@ class DynamoDbBatch:
                     if "put_item" in record:
                         put_ct += 1
                         item = record["put_item"]["Item"]
-                        logger.debug("Adding item %s to table %s" %
-                                    (dumps(item), table_name))
+                        logger.debug(
+                            "Adding item %s to table %s" % (dumps(item), table_name)
+                        )
                         if not self.dry_run:
                             batch.put_item(Item=item)
                     elif "delete_item" in record:
                         delete_ct += 1
                         key = record["delete_item"]["Key"]
-                        logger.debug("Deleting key %s from table %s" %
-                                    (dumps(key), table_name))
+                        logger.debug(
+                            "Deleting key %s from table %s" % (dumps(key), table_name)
+                        )
                         if not self.dry_run:
                             batch.delete_item(Key=key)
-        logger.debug("Wrote %s items and deleted %s items from %s tables" %
-                    (put_ct, delete_ct, table_ct))
+        logger.debug(
+            "Wrote %s items and deleted %s items from %s tables"
+            % (put_ct, delete_ct, table_ct)
+        )

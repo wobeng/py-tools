@@ -18,23 +18,27 @@ def get_file_handler(name):
     return file_handler
 
 
-def get_logger(logger_name=None, log_console=True, log_file=False, env=None):
-    if not env:
-        env = os.environ.get("ENVIRONMENT", "master")
+def get_logger(logger_name=None):
+    debug = os.environ.get("DEBUG", None)
     logger = logging.getLogger(logger_name)
-    logger.propagate = True if not log_file else False
-    if env == "master":
+
+    if debug is None:
         logger.setLevel(logging.INFO)
     else:
         logger.setLevel(logging.DEBUG)
+
     if not logger.hasHandlers():
-        if log_console:
-            logger.addHandler(get_console_handler())
-        if log_file:
+        if debug:
+            # log to file
             log_dir = ".logs"
             if not os.path.exists(log_dir):
                 os.mkdir(log_dir)
             logger.addHandler(
                 get_file_handler(os.path.join(log_dir, logger_name + ".log"))
             )
+            logger.propagate = False
+        else:
+            # log to console
+            logger.propagate = True
+            logger.addHandler(get_console_handler())
     return logger
