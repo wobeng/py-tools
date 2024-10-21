@@ -34,6 +34,5 @@ def get_logger(logger_name=None):
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
         logger.addHandler(get_file_handler(os.path.join(log_dir, logger_name + ".log")))
-    print("Logger initialized with debug: %s" % debug)
-    logger.info("Logger initialized with debug: %s", debug)
+    logger.info("Logger %s initialized with debug: %s", logger_name, debug)
     return logger
