@@ -22,20 +22,18 @@ def get_logger(logger_name=None):
     debug = os.environ.get("DEBUG", None)
     logger = logging.getLogger(logger_name)
     logger.propagate = True
-    if debug is None:
-        logger.setLevel(logging.INFO)
-    else:
-        logger.setLevel(logging.DEBUG)
 
-    if debug:
+    if debug is None:
+        # log to console
+        logger.setLevel(logging.INFO)
+        logger.addHandler(get_console_handler())
+    else:
         # log to file
+        logger.setLevel(logging.DEBUG)
         log_dir = ".logs"
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
         logger.addHandler(get_file_handler(os.path.join(log_dir, logger_name + ".log")))
-    else:
-        # log to console
-        logger.addHandler(get_console_handler())
-
+    print("Logger initialized with debug: %s" % debug)
     logger.info("Logger initialized with debug: %s", debug)
     return logger
