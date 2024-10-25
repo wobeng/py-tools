@@ -5,7 +5,7 @@ requests
 python-dateutil
 slack_sdk
 jsonschema
-cryptography>=3.4
+cryptography
 jwcrypto
 dotty-dict
 backoff
