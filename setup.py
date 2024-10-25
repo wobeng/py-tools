@@ -17,7 +17,7 @@ setup(
         "python-dateutil",
         "slack_sdk",
         "jsonschema",
-        "cryptography",
+        "cryptography>=3.4",
         "jwcrypto",
         "dotty-dict",
         "backoff",
@@ -25,6 +25,6 @@ setup(
         "bcrypt",
         "sentry-sdk",
         "python-dotenv",
-        "pyjwt"
+        "pyjwt",
     ],
 )
