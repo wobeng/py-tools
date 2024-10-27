@@ -19,10 +19,10 @@ def get_file_handler(name):
 
 
 def get_logger(logger_name=None):
-    debug = os.environ.get("DEBUG", None)
+    debug = os.environ.get("DEBUG", default="false")
     logger = logging.getLogger(logger_name)
 
-    if debug is None:
+    if debug == "false":
         # log to console
         logger.setLevel(logging.INFO)
         logger.addHandler(get_console_handler())
