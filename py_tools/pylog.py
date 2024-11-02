@@ -19,21 +19,25 @@ def get_file_handler(name):
 
 
 def get_logger(logger_name=None):
-    debug = os.environ.get("DEBUG", default="false")
+    debug = os.environ.get("DEBUG", default="false").lower() == "true"
     logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    # Disable log propagation to avoid passing logs to root logger
+    logger.propagate = False
     
+    # Clear all existing handlers
     logger.handlers.clear()
 
-    if debug == "false":
-        # log to console
-        logger.setLevel(logging.INFO)
+    # Add the appropriate handler based on the debug setting
+    if not debug:
         logger.addHandler(get_console_handler())
     else:
-        # log to file
-        logger.setLevel(logging.DEBUG)
+        # Log to file when debug is True
         log_dir = ".logs"
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
-        logger.addHandler(get_file_handler(os.path.join(log_dir, logger_name + ".log")))
+        logger.addHandler(get_file_handler(os.path.join(log_dir, f"{logger_name}.log")))
+
     logger.info("Logger %s initialized with debug: %s", logger_name, debug)
     return logger
