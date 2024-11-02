@@ -25,9 +25,6 @@ def get_logger(logger_name=None):
 
     # Disable log propagation to avoid passing logs to root logger
     logger.propagate = False
-    
-    # Clear all existing handlers
-    logger.handlers.clear()
 
     # Add the appropriate handler based on the debug setting
     if not debug:
