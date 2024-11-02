@@ -20,6 +20,8 @@ def get_file_handler(name):
 
 def get_logger(logger_name=None):
     debug = os.environ.get("DEBUG", default="false").lower() == "true"
+    aws_env = os.environ.get("AWS_EXECUTION_ENV", "").lower() != ""
+
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
@@ -29,8 +31,8 @@ def get_logger(logger_name=None):
     # Disable log propagation to avoid passing logs to root logger
     logger.propagate = False
 
-    # Add the appropriate handler based on the debug setting
-    if not debug:
+    # Add the appropriate handler based on the environment
+    if aws_env or not debug:
         logger.addHandler(get_console_handler())
     else:
         # Log to file when debug is True
