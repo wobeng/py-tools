@@ -21,6 +21,8 @@ def get_file_handler(name):
 def get_logger(logger_name=None):
     debug = os.environ.get("DEBUG", default="false")
     logger = logging.getLogger(logger_name)
+    
+    logger.handlers.clear()
 
     if debug == "false":
         # log to console
