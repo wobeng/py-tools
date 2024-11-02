@@ -23,6 +23,11 @@ def get_logger(logger_name=None):
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
+    had_handlers = logger.hasHandlers()
+
+    # Remove existing handlers to avoid duplicate logs
+    logger.handlers.clear()
+
     # Disable log propagation to avoid passing logs to root logger
     logger.propagate = False
 
@@ -36,5 +41,7 @@ def get_logger(logger_name=None):
             os.mkdir(log_dir)
         logger.addHandler(get_file_handler(os.path.join(log_dir, f"{logger_name}.log")))
 
-    logger.info("Logger %s initialized with debug: %s", logger_name, debug)
+    if not had_handlers:
+        logger.info("Logger %s initialized with debug: %s", logger_name, debug)
+
     return logger
