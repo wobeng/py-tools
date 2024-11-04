@@ -49,7 +49,7 @@ def aws_lambda_handler(
                 LoggingIntegration(level=logging.DEBUG),
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            environment=os.environ.get("ENVIRONMENT", "develop"),
+            environment=os.environ.get("ENVIRONMENT", "dev"),
             release=os.environ.get("RELEASE", ""),
         )
 
@@ -87,7 +87,7 @@ def aws_lambda_replay_handler(
                 LoggingIntegration(level=logging.DEBUG),
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            environment=os.environ.get("ENVIRONMENT", "develop"),
+            environment=os.environ.get("ENVIRONMENT", "dev"),
             release=os.environ.get("RELEASE", ""),
         )
     file = file.replace("/adhoc/", "/")
