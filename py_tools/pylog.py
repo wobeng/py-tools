@@ -23,7 +23,7 @@ def get_logger(logger_name=None):
     aws_env = os.environ.get("AWS_EXECUTION_ENV", "").lower() != ""
 
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    had_handler = logger.hasHandlers()
 
     # Remove existing handlers to avoid duplicate logs
     logger.handlers.clear()
@@ -41,6 +41,11 @@ def get_logger(logger_name=None):
             os.mkdir(log_dir)
         logger.addHandler(get_file_handler(os.path.join(log_dir, f"{logger_name}.log")))
 
-    logger.info("Logger %s initialized with debug: %s", logger_name, debug)
+    logger.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    if not had_handler:
+        logger.info(
+            "Logger %s initialized with debug: %s, aws_env: %s", logger_name, debug, aws_env
+        )
 
     return logger
