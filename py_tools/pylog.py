@@ -19,7 +19,7 @@ def get_file_handler(name):
 
 
 def get_logger(logger_name=None):
-    debug = os.environ.get("DEBUG", default="false").lower() == "true"
+    debug = os.environ.get("ENVIRONMENT", default="prd") == "dev"
     aws_env = os.environ.get("AWS_EXECUTION_ENV", "").lower() != ""
 
     logger = logging.getLogger(logger_name)
