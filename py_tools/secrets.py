@@ -9,10 +9,11 @@ ssm = boto3.client("ssm")
 
 
 def environ_wrap(value):
-    if value.lower() == "true":
-        return "true"
-    if value.lower() == "false":
-        return "false"
+    if isinstance(value, str):
+        if value.lower() == "true":
+            return "true"
+        if value.lower() == "false":
+            return "false"
     if isinstance(value, bool):
         return str(value).lower()
     return value
