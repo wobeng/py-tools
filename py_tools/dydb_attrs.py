@@ -1,8 +1,9 @@
 import os
-from datetime import timezone
+from datetime import timezone, datetime, timedelta
 from pynamodb.attributes import (
     UTCDateTimeAttribute,
     MapAttribute,
+    TTLAttribute,
     JSONAttribute as JSONA,
 )
 from py_tools import format
@@ -56,6 +57,55 @@ class DynamicMapAttribute(MapAttribute):
         return cls == DynamicMapAttribute
 
 
+def _get_timezone(self, default=None):
+    """
+    Retrieves the user's timezone from the TIMEZONE environment variable or defaults to UTC.
+    """
+    user_timezone = os.getenv("TIMEZONE")
+    try:
+        return pytz_timezone(user_timezone, default=default)
+    except Exception as e:
+        raise ValueError(f"Invalid timezone '{user_timezone}': {e}")
+
+
+class UserTimezoneTTLAttribute(TTLAttribute):
+    def serialize(self, value):
+        """
+        Converts a datetime object from the user's timezone to UTC and serializes it.
+        """
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise ValueError("Datetime value must be timezone-aware.")
+
+            # Get the user's timezone
+            tz = _get_timezone()
+
+            # Convert the datetime from the user's timezone to UTC
+            user_time = value.astimezone(tz)
+            utc_time = user_time.astimezone(timezone.utc)
+
+            # Serialize the UTC datetime as a timestamp
+            return super().serialize(utc_time)
+        elif isinstance(value, timedelta):
+            # For timedelta, directly pass it to the parent serialize
+            return super().serialize(value)
+        else:
+            raise ValueError("TTLAttribute value must be a timedelta or datetime")
+
+    def deserialize(self, value):
+        """
+        Deserializes a timestamp (Unix time) to a datetime object in the user's timezone.
+        """
+        # Deserialize the value as UTC datetime using the base class
+        utc_datetime = super().deserialize(value)
+
+        # Get the user's timezone
+        tz = _get_timezone("UTC")
+
+        # Convert the UTC datetime to the user's timezone
+        return utc_datetime.astimezone(tz)
+
+
 class UserTimezoneDateTimeAttribute(UTCDateTimeAttribute):
     def deserialize(self, value):
         """
@@ -64,15 +114,8 @@ class UserTimezoneDateTimeAttribute(UTCDateTimeAttribute):
         # Parse the UTC datetime string using the base class
         utc_datetime = super().deserialize(value)
 
-        # Get the timezone from the environment or default to UTC
-        user_timezone = os.getenv("TIMEZONE", "UTC")
-
-        try:
-            tz = pytz_timezone(user_timezone)
-        except Exception as e:
-            raise ValueError(
-                f"Invalid timezone '{user_timezone}' in environment variable TIMEZONE: {e}"
-            )
+        # Get the timezone from the environment
+        tz = _get_timezone("UTC")
 
         # Convert the UTC datetime to the user's timezone
         local_datetime = utc_datetime.astimezone(tz)
@@ -87,15 +130,8 @@ class UTCZoneAwareDateTimeAttribute(UserTimezoneDateTimeAttribute):
         if value.tzinfo is None:
             raise ValueError("Datetime value must be timezone-aware.")
 
-        # Get the timezone from the environment or default to UTC
-        user_timezone = os.getenv("TIMEZONE")
-
-        try:
-            tz = pytz_timezone(user_timezone)
-        except Exception as e:
-            raise ValueError(
-                f"Invalid timezone '{user_timezone}' in environment variable TIMEZONE: {e}"
-            )
+        # Get the timezone from the environment
+        tz = _get_timezone()
 
         # Convert the datetime from the user's timezone to UTC
         user_time = value.astimezone(tz)
