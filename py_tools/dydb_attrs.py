@@ -56,7 +56,30 @@ class DynamicMapAttribute(MapAttribute):
         return cls == DynamicMapAttribute
 
 
-class UTCZoneAwareDateTimeAttribute(UTCDateTimeAttribute):
+class UserTimezoneDateTimeAttribute(UTCDateTimeAttribute):
+    def deserialize(self, value):
+        """
+        Converts a UTC datetime string to the user's timezone based on the TIMEZONE environment variable.
+        """
+        # Parse the UTC datetime string using the base class
+        utc_datetime = super().deserialize(value)
+
+        # Get the timezone from the environment or default to UTC
+        user_timezone = os.getenv("TIMEZONE", "UTC")
+
+        try:
+            tz = pytz_timezone(user_timezone)
+        except Exception as e:
+            raise ValueError(
+                f"Invalid timezone '{user_timezone}' in environment variable TIMEZONE: {e}"
+            )
+
+        # Convert the UTC datetime to the user's timezone
+        local_datetime = utc_datetime.astimezone(tz)
+        return local_datetime
+
+
+class UTCZoneAwareDateTimeAttribute(UserTimezoneDateTimeAttribute):
     def serialize(self, value):
         """
         Converts a datetime object from the user's timezone to UTC before saving.
@@ -80,24 +103,3 @@ class UTCZoneAwareDateTimeAttribute(UTCDateTimeAttribute):
 
         # Serialize the UTC datetime using the base class
         return super().serialize(utc_time)
-
-    def deserialize(self, value):
-        """
-        Converts a UTC datetime string to the user's timezone based on the TIMEZONE environment variable.
-        """
-        # Parse the UTC datetime string using the base class
-        utc_datetime = super().deserialize(value)
-
-        # Get the timezone from the environment or default to UTC
-        user_timezone = os.getenv("TIMEZONE", "UTC")
-
-        try:
-            tz = pytz_timezone(user_timezone)
-        except Exception as e:
-            raise ValueError(
-                f"Invalid timezone '{user_timezone}' in environment variable TIMEZONE: {e}"
-            )
-
-        # Convert the UTC datetime to the user's timezone
-        local_datetime = utc_datetime.astimezone(tz)
-        return local_datetime
