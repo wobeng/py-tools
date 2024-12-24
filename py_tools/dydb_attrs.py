@@ -61,9 +61,9 @@ def _get_timezone(default=None):
     """
     Retrieves the user's timezone from the TIMEZONE environment variable or defaults to UTC.
     """
-    user_timezone = os.getenv("TIMEZONE")
+    user_timezone = os.getenv("TIMEZONE", default=default)
     try:
-        return pytz_timezone(user_timezone, default=default)
+        return pytz_timezone(user_timezone)
     except Exception as e:
         raise ValueError(f"Invalid timezone '{user_timezone}': {e}")
 
