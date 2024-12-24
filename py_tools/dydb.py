@@ -4,18 +4,14 @@ import os
 from copy import deepcopy
 from py_tools.date import datetime_utc
 from typing import Any, Dict, List, Optional, Union
-
 from pynamodb.attributes import (
     UTCDateTimeAttribute,
-    MapAttribute,
-    JSONAttribute as JSONA,
 )
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
 from py_tools import format
 from py_tools.pylog import get_logger
-
 
 logger = get_logger("py-tools.dydb")
 
@@ -25,53 +21,6 @@ class ModelEncoder(format.ModelEncoder):
         if hasattr(obj, "attribute_values"):
             return obj.attribute_values
         return super(ModelEncoder, self).default(obj)
-
-
-class JSONAttribute(JSONA):
-    def serialize(self, value):
-        if value is None:
-            return None
-        encoded = format.dumps(value)
-        return encoded
-
-    def deserialize(self, value):
-        return format.loads(value)
-
-
-class DynamicMapAttribute(MapAttribute):
-    element_type = None
-
-    def __init__(self, *args, of=None, **kwargs):
-        if of:
-            if not issubclass(of, MapAttribute):
-                raise ValueError('"of" must be subclass of MapAttribute')
-            self.element_type = of
-        super(DynamicMapAttribute, self).__init__(*args, **kwargs)
-
-    def _set_attributes(self, **attrs):
-        """
-        Sets the attributes for this object
-        """
-        for name, value in attrs.items():
-            setattr(self, name, value)
-
-    def deserialize(self, values):
-        """
-        Decode from map of AttributeValue types.
-        """
-        if not self.element_type:
-            return super(DynamicMapAttribute, self).deserialize(values)
-
-        class_for_deserialize = self.element_type()
-        return {
-            k: class_for_deserialize.deserialize(attr_value)
-            for k, v in values.items()
-            for _, attr_value in v.items()
-        }
-
-    @classmethod
-    def is_raw(cls):
-        return cls == DynamicMapAttribute
 
 
 class DbModel(Model):
