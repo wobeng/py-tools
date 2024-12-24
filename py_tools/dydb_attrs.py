@@ -57,7 +57,7 @@ class DynamicMapAttribute(MapAttribute):
         return cls == DynamicMapAttribute
 
 
-def _get_timezone(self, default=None):
+def _get_timezone(default=None):
     """
     Retrieves the user's timezone from the TIMEZONE environment variable or defaults to UTC.
     """
