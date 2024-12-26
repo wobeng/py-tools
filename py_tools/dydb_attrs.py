@@ -57,11 +57,11 @@ class DynamicMapAttribute(MapAttribute):
         return cls == DynamicMapAttribute
 
 
-def _get_timezone(default=None):
+def _get_timezone():
     """
     Retrieves the user's timezone from the TIMEZONE environment variable or defaults to UTC.
     """
-    user_timezone = os.getenv("TIMEZONE", default=default)
+    user_timezone = os.getenv("TIMEZONE", default="UTC")
     try:
         return pytz_timezone(user_timezone)
     except Exception as e:
@@ -100,7 +100,7 @@ class UserTimezoneTTLAttribute(TTLAttribute):
         utc_datetime = super().deserialize(value)
 
         # Get the user's timezone
-        tz = _get_timezone("UTC")
+        tz = _get_timezone()
 
         # Convert the UTC datetime to the user's timezone
         return utc_datetime.astimezone(tz)
@@ -115,7 +115,7 @@ class UserTimezoneDateTimeAttribute(UTCDateTimeAttribute):
         utc_datetime = super().deserialize(value)
 
         # Get the timezone from the environment
-        tz = _get_timezone("UTC")
+        tz = _get_timezone()
 
         # Convert the UTC datetime to the user's timezone
         local_datetime = utc_datetime.astimezone(tz)
