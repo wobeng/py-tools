@@ -62,7 +62,9 @@ class Request:
                 # Handle other HTTP errors or raise an exception
                 response.raise_for_status()
 
-        raise Exception(f"Request failed after {self.max_retries} retries")
+        raise Exception(
+            f"Request failed after {self.max_retries} retries with response: {response.text}"
+        )
 
     def log_response(self, method, path, response):
         logger.info(
