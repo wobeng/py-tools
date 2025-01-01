@@ -41,7 +41,10 @@ class Request:
                 params=params,
             )
 
-            if response.ok or response.status_code in skip_raising_codes:
+            if response.ok:
+                return response
+            if response.status_code in skip_raising_codes:
+                self.log_response(method, url, response)
                 return response
 
             elif response.status_code in [400, 429, 500]:
