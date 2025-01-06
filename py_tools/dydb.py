@@ -4,9 +4,7 @@ import os
 from copy import deepcopy
 from py_tools.date import datetime_utc
 from typing import Any, Dict, List, Optional, Union
-from pynamodb.attributes import (
-    UTCDateTimeAttribute,
-)
+from py_tools.dydb_attrs import UserTimezoneDateTimeAttribute
 from pynamodb.exceptions import DoesNotExist
 from pynamodb.models import Model
 from pynamodb.transactions import TransactWrite as _TransactWrite
@@ -25,8 +23,8 @@ class ModelEncoder(format.ModelEncoder):
 
 class DbModel(Model):
     _db_conditions = {}
-    created_on = UTCDateTimeAttribute()
-    updated_on = UTCDateTimeAttribute()
+    created_on = UserTimezoneDateTimeAttribute()
+    updated_on = UserTimezoneDateTimeAttribute()
 
     def __init__(self, hash_key=None, range_key=None, **attrs):
         super(DbModel, self).__init__(hash_key, range_key, **attrs)
