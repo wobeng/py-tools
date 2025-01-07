@@ -69,6 +69,20 @@ def _get_timezone():
 
 
 class UserTimezoneTTLAttribute(TTLAttribute):
+    def _normalize(self, value):
+        if value is None:
+            return
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                raise ValueError("datetime must be timezone-aware")
+            # Skip UTC normalization to preserve user's timezone
+            return value
+        elif isinstance(value, timedelta):
+            # Assume timedelta is relative to current UTC time
+            return datetime.now(timezone.utc) + value
+        else:
+            raise ValueError("TTLAttribute value must be a timedelta or datetime")
+
     def serialize(self, value):
         """
         Converts a datetime object from the user's timezone to UTC and serializes it.
