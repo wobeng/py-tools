@@ -118,8 +118,7 @@ class UserTimezoneDateTimeAttribute(UTCDateTimeAttribute):
         tz = _get_timezone()
 
         # Convert the UTC datetime to the user's timezone
-        local_datetime = utc_datetime.astimezone(tz)
-        return local_datetime
+        return utc_datetime.astimezone(tz)
 
 
 class UTCZoneAwareDateTimeAttribute(UserTimezoneDateTimeAttribute):
