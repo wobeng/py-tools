@@ -10,22 +10,19 @@ class Sqs:
         self.client = boto3.client("sqs")
         self.queue_url = queue_url
         if queue_name:
-            self.queue_url = self.client.get_queue_url(QueueName=queue_name)[
-                "QueueUrl"
-            ]
+            self.queue_url = self.client.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
-    def _run_batch(self, entries, function_name):
+    def _run_batch(self, entries, sqs_client_method):
         n = 10
         new_entries = [
-            entries[i * n: (i + 1) * n]
-            for i in range((len(entries) + n - 1) // n)
+            entries[i * n : (i + 1) * n] for i in range((len(entries) + n - 1) // n)
         ]
 
         for ne in new_entries:
             ne_copy = ne.copy()
             get_out = False
             while not get_out:
-                response = getattr(self.client, function_name)(
+                response = getattr(self.client, sqs_client_method)(
                     QueueUrl=self.queue_url, Entries=ne_copy
                 )
                 if response.get("Failed", None):
@@ -50,7 +47,7 @@ class Sqs:
             MaxNumberOfMessages=limit,
             AttributeNames=["All"],
             MessageAttributeNames=["All"],
-            **kwargs
+            **kwargs,
         )
         return response
 
@@ -58,7 +55,7 @@ class Sqs:
         response = self.client.send_message(
             QueueUrl=self.queue_url,
             MessageBody=format.dumps(message, use_decimal=True),
-            **kwargs
+            **kwargs,
         )
         return response
 
@@ -87,9 +84,7 @@ class Sqs:
                     attrs[k] = attr_values
                 entry["MessageAttributes"] = attrs
             if "MessageGroupId" in record["attributes"]:
-                entry["MessageGroupId"] = record["attributes"][
-                    "MessageGroupId"
-                ]
+                entry["MessageGroupId"] = record["attributes"]["MessageGroupId"]
             else:
                 entry["DelaySeconds"] = delay
             entries.append(entry)
