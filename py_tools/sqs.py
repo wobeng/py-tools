@@ -1,14 +1,20 @@
 from uuid import uuid4
 
 import boto3
-
+from botocore.exceptions import ClientError
 from py_tools import format
+import tempfile
+from py_tools.format import dumps
+import uuid
+from py_tools.s3 import upload_file
 
 
 class Sqs:
-    def __init__(self, queue_name=None, queue_url=None):
+    def __init__(self, queue_name=None, queue_url=None, bucket=None, key_prefix="sqs"):
         self.client = boto3.client("sqs")
         self.queue_url = queue_url
+        self.bucket = bucket
+        self.key_prefix = key_prefix
         if queue_name:
             self.queue_url = self.client.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
@@ -31,6 +37,19 @@ class Sqs:
                 else:
                     get_out = True
 
+    def _store_sqs_s3(self, message):
+        uid = uuid.uuid4()
+        key = f"{self.key_prefix}/{uid}.json"
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as f:
+            f.write(dumps(message))
+            f.flush()
+            upload_file(
+                f.name,
+                self.bucket,
+                key,
+            )
+        return {"bucket": self.bucket, "key": key}
+
     def purge(self):
         response = self.client.purge_queue(QueueUrl=self.queue_url)
         return response
@@ -52,11 +71,19 @@ class Sqs:
         return response
 
     def send_message(self, message, **kwargs):
-        response = self.client.send_message(
-            QueueUrl=self.queue_url,
-            MessageBody=format.dumps(message, use_decimal=True),
-            **kwargs,
-        )
+        try:
+            response = self.client.send_message(
+                QueueUrl=self.queue_url,
+                MessageBody=format.dumps(message, use_decimal=True),
+                **kwargs,
+            )
+        except ClientError as e:
+            if "message must be shorter" in str(e).lower():
+                response = self.client.send_message(
+                    QueueUrl=self.queue_url,
+                    MessageBody=self._store_sqs_s3(message),
+                    **kwargs,
+                )
         return response
 
     def send_message_batch(self, entries):
