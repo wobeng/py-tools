@@ -9,6 +9,7 @@ import gzip
 import base64
 from py_tools.format import loads
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.openai_agents import OpenAIAgentsIntegration
 import logging
 
 
@@ -48,6 +49,7 @@ def aws_lambda_handler(
             integrations=[
                 LoggingIntegration(level=logging.DEBUG),
                 AwsLambdaIntegration(timeout_warning=True),
+                OpenAIAgentsIntegration(),
             ],
             environment=os.environ.get("ENVIRONMENT", "dev"),
             release=os.environ.get("RELEASE", ""),
@@ -86,6 +88,7 @@ def aws_lambda_replay_handler(
             integrations=[
                 LoggingIntegration(level=logging.DEBUG),
                 AwsLambdaIntegration(timeout_warning=True),
+                OpenAIAgentsIntegration(),
             ],
             environment=os.environ.get("ENVIRONMENT", "dev"),
             release=os.environ.get("RELEASE", ""),
