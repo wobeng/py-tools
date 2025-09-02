@@ -20,6 +20,13 @@ def decompress_json(compressed_string):
     return data
 
 
+def release_info():
+    release = ""
+    if os.environ.get("LAMBDA_TASK_ROOT"):
+        release = open(f"{os.environ['LAMBDA_TASK_ROOT']}/release.txt").read()
+    return release
+
+
 class ReplayBin(DbModel):
     nickname = "replay"
 
@@ -50,7 +57,7 @@ def aws_lambda_handler(
                 AwsLambdaIntegration(timeout_warning=True),
             ],
             environment=os.environ.get("ENVIRONMENT", "dev"),
-            release=os.environ.get("RELEASE", ""),
+            release=release_info(),
         )
 
     def wrapper(event, context=None):
@@ -88,7 +95,7 @@ def aws_lambda_replay_handler(
                 AwsLambdaIntegration(timeout_warning=True),
             ],
             environment=os.environ.get("ENVIRONMENT", "dev"),
-            release=os.environ.get("RELEASE", ""),
+            release=release_info(),
         )
     file = file.replace("/adhoc/", "/")
 
