@@ -1,15 +1,12 @@
 from py_tools.handler import aws_lambda_handler as main_aws_lambda_handler
 from py_tools.dydb import DbModel
-import os
 from py_tools.date import date_id
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute
-import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 import gzip
 import base64
 from py_tools.format import loads
-from sentry_sdk.integrations.logging import LoggingIntegration
-import logging
+from py_tools.sentry import setup_sentry
 
 
 def decompress_json(compressed_string):
@@ -20,11 +17,6 @@ def decompress_json(compressed_string):
     return data
 
 
-def release_info():
-    release = ""
-    if os.environ.get("LAMBDA_TASK_ROOT"):
-        release = open(f"{os.environ['LAMBDA_TASK_ROOT']}/release.txt").read()
-    return release
 
 
 class ReplayBin(DbModel):
@@ -49,15 +41,11 @@ def aws_lambda_handler(
     send_default_pii=False,
 ):
     if sentry_dsn:
-        sentry_sdk.init(
-            dsn=sentry_dsn,
-            send_default_pii=send_default_pii,
-            integrations=[
-                LoggingIntegration(level=logging.DEBUG),
+        setup_sentry(
+            sentry_dsn,
+            [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            environment=os.environ.get("ENVIRONMENT", "dev"),
-            release=release_info(),
         )
 
     def wrapper(event, context=None):
@@ -88,15 +76,13 @@ def aws_lambda_replay_handler(
     file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None
 ):
     if sentry_dsn:
-        sentry_sdk.init(
-            dsn=sentry_dsn,
-            integrations=[
-                LoggingIntegration(level=logging.DEBUG),
+        setup_sentry(
+            sentry_dsn,
+            [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            environment=os.environ.get("ENVIRONMENT", "dev"),
-            release=release_info(),
         )
+
     file = file.replace("/adhoc/", "/")
 
     def wrapper(event=None, context=None):
