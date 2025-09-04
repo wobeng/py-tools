@@ -11,7 +11,7 @@ def release_info():
     return release
 
 
-def setup_sentry(sentry_dsn, integrations):
+def setup_sentry(sentry_dsn, integrations, release=None):
     log_level = logging.DEBUG
     send_default_pii = True
     if os.environ["ENVIRONMENT"] == "prd":
@@ -25,7 +25,7 @@ def setup_sentry(sentry_dsn, integrations):
         + integrations,
         traces_sample_rate=1.0,
         attach_stacktrace=True,
-        release=release_info(),
+        release=release or release_info(),
         send_default_pii=send_default_pii,
         environment=os.environ["ENVIRONMENT"],
         _experiments={
