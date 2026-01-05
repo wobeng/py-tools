@@ -5,8 +5,6 @@ import boto3
 
 from py_tools import format
 
-ssm = boto3.client("ssm")
-
 
 def environ_wrap(value):
     if isinstance(value, str):
@@ -19,7 +17,8 @@ def environ_wrap(value):
     return value
 
 
-def get_parameters(caller_file, path=None, names=None, load=False, ssm_client=ssm):
+def get_parameters(caller_file, path=None, names=None, load=False, ssm_client=None):
+    ssm_client = ssm_client or boto3.Session().client("ssm")
     load_env(caller_file)
     if names:
         response = ssm_client.get_parameters(Names=names, WithDecryption=True)
