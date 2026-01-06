@@ -17,6 +17,16 @@ def environ_wrap(value):
     return value
 
 
+def get_preloaded_secrets():
+    secrets = {}
+    for env_key, env_val in os.environ.items():
+        if env_key.endswith("_SECRETS"):
+            secrets.update(format.loads(env_val))
+    for key, value in secrets.items():
+        os.environ[key] = environ_wrap(value)
+    return secrets
+
+
 def get_parameters(caller_file, path=None, names=None, load=False, ssm_client=None):
     ssm_client = ssm_client or boto3.Session().client("ssm")
     load_env(caller_file)
