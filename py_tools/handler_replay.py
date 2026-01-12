@@ -7,6 +7,7 @@ import gzip
 import base64
 from py_tools.format import loads
 from py_tools.sentry import setup_sentry
+from sentry_sdk.scrubber import EventScrubber, DEFAULT_DENYLIST, DEFAULT_PII_DENYLIST
 
 
 def decompress_json(compressed_string):
@@ -15,8 +16,6 @@ def decompress_json(compressed_string):
     decompressed_json_string = decompressed_data.decode()
     data = loads(decompressed_json_string)
     return data
-
-
 
 
 class ReplayBin(DbModel):
@@ -38,14 +37,21 @@ def aws_lambda_handler(
     record_wrapper=None,
     before_request=None,
     sentry_dsn=None,
-    send_default_pii=False,
+    sentry_denylist=None,
+    sentry_pii_denylist=None,
 ):
     if sentry_dsn:
+        sentry_denylist = (sentry_denylist or []) + DEFAULT_DENYLIST
+        sentry_pii_denylist = (sentry_pii_denylist or []) + DEFAULT_PII_DENYLIST
         setup_sentry(
             sentry_dsn,
             [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
+            send_default_pii=False,
+            event_scrubber=EventScrubber(
+                denylist=sentry_denylist, pii_denylist=sentry_pii_denylist
+            ),
         )
 
     def wrapper(event, context=None):
@@ -73,14 +79,26 @@ def aws_lambda_handler(
 
 
 def aws_lambda_replay_handler(
-    file, name=None, record_wrapper=None, before_request=None, sentry_dsn=None
+    file,
+    name=None,
+    record_wrapper=None,
+    before_request=None,
+    sentry_dsn=None,
+    sentry_denylist=None,
+    sentry_pii_denylist=None,
 ):
     if sentry_dsn:
+        sentry_denylist = (sentry_denylist or []) + DEFAULT_DENYLIST
+        sentry_pii_denylist = (sentry_pii_denylist or []) + DEFAULT_PII_DENYLIST
         setup_sentry(
             sentry_dsn,
             [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
+            send_default_pii=False,
+            event_scrubber=EventScrubber(
+                denylist=sentry_denylist, pii_denylist=sentry_pii_denylist
+            ),
         )
 
     file = file.replace("/adhoc/", "/")
