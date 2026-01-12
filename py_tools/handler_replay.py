@@ -7,7 +7,6 @@ import gzip
 import base64
 from py_tools.format import loads
 from py_tools.sentry import setup_sentry
-from sentry_sdk.scrubber import EventScrubber, DEFAULT_DENYLIST, DEFAULT_PII_DENYLIST
 
 
 def decompress_json(compressed_string):
@@ -41,17 +40,13 @@ def aws_lambda_handler(
     sentry_pii_denylist=None,
 ):
     if sentry_dsn:
-        sentry_denylist = (sentry_denylist or []) + DEFAULT_DENYLIST
-        sentry_pii_denylist = (sentry_pii_denylist or []) + DEFAULT_PII_DENYLIST
         setup_sentry(
             sentry_dsn,
             [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            send_default_pii=False,
-            event_scrubber=EventScrubber(
-                denylist=sentry_denylist, pii_denylist=sentry_pii_denylist
-            ),
+            sentry_denylist=sentry_denylist,
+            sentry_pii_denylist=sentry_pii_denylist,
         )
 
     def wrapper(event, context=None):
@@ -88,17 +83,13 @@ def aws_lambda_replay_handler(
     sentry_pii_denylist=None,
 ):
     if sentry_dsn:
-        sentry_denylist = (sentry_denylist or []) + DEFAULT_DENYLIST
-        sentry_pii_denylist = (sentry_pii_denylist or []) + DEFAULT_PII_DENYLIST
         setup_sentry(
             sentry_dsn,
             [
                 AwsLambdaIntegration(timeout_warning=True),
             ],
-            send_default_pii=False,
-            event_scrubber=EventScrubber(
-                denylist=sentry_denylist, pii_denylist=sentry_pii_denylist
-            ),
+            sentry_denylist=sentry_denylist,
+            sentry_pii_denylist=sentry_pii_denylist,
         )
 
     file = file.replace("/adhoc/", "/")
