@@ -7,6 +7,7 @@ import gzip
 import base64
 from py_tools.format import loads
 from py_tools.sentry import setup_sentry
+from py_tools.s3 import get_object
 
 
 def decompress_json(compressed_string):
@@ -15,6 +16,14 @@ def decompress_json(compressed_string):
     decompressed_json_string = decompressed_data.decode()
     data = loads(decompressed_json_string)
     return data
+
+
+def fetch_record_from_s3(s3_uri):
+    """Parse s3_uri and fetch record from S3."""
+    parts = s3_uri.replace("s3://", "").split("/", 1)
+    bucket, key = parts[0], parts[1]
+    data = get_object(bucket, key)
+    return loads(data)
 
 
 class ReplayBin(DbModel):
@@ -26,18 +35,21 @@ class ReplayBin(DbModel):
     bin = UnicodeAttribute(hash_key=True)
     replay_id = UnicodeAttribute(default_for_new=date_id(nickname), range_key=True)
     run_count = NumberAttribute(default=1)
-    record = UnicodeAttribute()
+    record = UnicodeAttribute(null=True)
+    s3_uri = UnicodeAttribute(null=True)
     reason = UnicodeAttribute()
 
 
 def aws_lambda_handler(
     file,
-    name=None,
-    record_wrapper=None,
+    name,
+    dydb_wrapper=None,
     before_request=None,
     sentry_dsn=None,
     sentry_denylist=None,
     sentry_pii_denylist=None,
+    s3_bucket=None,
+    s3_key_prefix="replay",
 ):
     if sentry_dsn:
         setup_sentry(
@@ -53,9 +65,11 @@ def aws_lambda_handler(
         function = main_aws_lambda_handler(
             file=file,
             name=name,
-            record_wrapper=record_wrapper,
+            dydb_wrapper=dydb_wrapper,
             before_request=before_request,
             send_sentry=(sentry_dsn is not None),
+            s3_bucket=s3_bucket,
+            s3_key_prefix=s3_key_prefix,
         )
 
         outpost = function(event, context)
@@ -75,12 +89,14 @@ def aws_lambda_handler(
 
 def aws_lambda_replay_handler(
     file,
-    name=None,
-    record_wrapper=None,
+    name,
+    dydb_wrapper=None,
     before_request=None,
     sentry_dsn=None,
     sentry_denylist=None,
     sentry_pii_denylist=None,
+    s3_bucket=None,
+    s3_key_prefix="replay",
 ):
     if sentry_dsn:
         setup_sentry(
@@ -98,14 +114,21 @@ def aws_lambda_replay_handler(
         function = main_aws_lambda_handler(
             file=file,
             name=name,
-            record_wrapper=record_wrapper,
+            dydb_wrapper=dydb_wrapper,
             before_request=before_request,
             send_sentry=(sentry_dsn is not None),
+            s3_bucket=s3_bucket,
+            s3_key_prefix=s3_key_prefix,
         )
 
         for item in ReplayBin.query(hash_key=name, limit=10):
             item = item.dict()
-            record = decompress_json(item["record"])
+
+            # Fetch record from S3 or decompress from DynamoDB
+            if item.get("s3_uri"):
+                record = fetch_record_from_s3(item["s3_uri"])
+            else:
+                record = decompress_json(item["record"])
 
             outpost = function(record, context)
 
