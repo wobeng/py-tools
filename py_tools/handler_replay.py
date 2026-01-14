@@ -38,6 +38,7 @@ class ReplayBin(DbModel):
     record = UnicodeAttribute(null=True)
     s3_uri = UnicodeAttribute(null=True)
     reason = UnicodeAttribute()
+    function_name = UnicodeAttribute(null=True)  # For DynamoDB granular replay
 
 
 def aws_lambda_handler(
@@ -130,6 +131,12 @@ def aws_lambda_replay_handler(
             else:
                 record = decompress_json(item["record"])
 
+            # For DynamoDB with function_name, do targeted replay
+            target_function = item.get("function_name")
+            if target_function:
+                # Inject target function into event for targeted replay
+                record["_target_function_name"] = target_function
+            
             outpost = function(record, context)
 
             if outpost.replays:

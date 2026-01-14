@@ -53,13 +53,21 @@ class Handlers(BaseHandler):
         if before_request:
             before_request(record, context)
 
-    def dynamodb(self):
+    def dynamodb(self, target_function_name=None):
         wrapper = self.dydb_wrapper or StreamRecord
         record = wrapper(self.record)
         m = self.module_handler(self.file, record.trigger_module, folder="dynamodb")
         functions = getattr(m, record.event_name, [])
-        for function in functions:
-            function(record, self.context)
+        
+        # If target_function_name specified, only run that function
+        if target_function_name:
+            for function in functions:
+                if function.__name__ == target_function_name:
+                    function(record, self.context)
+                    break
+        else:
+            for function in functions:
+                function(record, self.context)
         return
 
     def sqs(self):
@@ -122,8 +130,12 @@ class OutPost:
     def add_replays(self, output):
         self.replays.append(output)
 
-    def process_failed(self, name, record, reason):
+    def process_failed(self, name, record, reason, function_name=None):
         entry = {"bin": name, "reason": reason}
+        
+        # Store function name if provided (for DynamoDB granular replay)
+        if function_name:
+            entry["function_name"] = function_name
 
         # If S3 bucket specified, store record there; else compress in DynamoDB
         if self.s3_bucket:
@@ -173,23 +185,61 @@ def _process_individual(
     name,
     send_sentry,
     outpost,
+    target_function_name=None,
 ):
     """Process a single record"""
+    # Special handling for DynamoDB to track individual function failures
+    if source_handler == "dynamodb" and not target_function_name:
+        handler_cls = Handlers(file, record, context, dydb_wrapper, before_request)
+        wrapper = dydb_wrapper or StreamRecord
+        stream_record = wrapper(record)
+        m = handler_cls.module_handler(file, stream_record.trigger_module, folder="dynamodb")
+        functions = getattr(m, stream_record.event_name, [])
+        
+        for function in functions:
+            try:
+                function(stream_record, context)
+            except BaseException:
+                if send_sentry:
+                    sentry_sdk.set_context("record", record)
+                    sentry_sdk.set_context("function", function.__name__)
+                    sentry_sdk.capture_exception()
+                
+                # Store individual function failure
+                outpost.process_failed(
+                    name, 
+                    record, 
+                    traceback.format_exc(),
+                    function_name=function.__name__
+                )
+        return
+    
+    # Standard processing for other sources or targeted replay
     try:
         handler_cls = Handlers(file, record, context, dydb_wrapper, before_request)
         method = getattr(handler_cls, source_handler)
-        output = method()
+        if source_handler == "dynamodb" and target_function_name:
+            output = method(target_function_name=target_function_name)
+        else:
+            output = method()
         if output:
             outpost.add_processed(output)
     except BaseException:
         if send_sentry:
             sentry_sdk.set_context("record", record)
+            if target_function_name:
+                sentry_sdk.set_context("function", target_function_name)
             sentry_sdk.capture_exception()
 
         if source_handler == "adhoc":
             raise
 
-        outpost.process_failed(name, record, traceback.format_exc())
+        outpost.process_failed(
+            name, 
+            record, 
+            traceback.format_exc(),
+            function_name=target_function_name
+        )
 
 
 def aws_lambda_handler(
@@ -220,6 +270,9 @@ def aws_lambda_handler(
         # Skip individual processing when a batch handler successfully handled the set
         if not processed_in_batch:
             for record in records:
+                # Extract target function name if present (for targeted replay)
+                target_function_name = record.pop("_target_function_name", None)
+                
                 _process_individual(
                     file,
                     record,
@@ -230,6 +283,7 @@ def aws_lambda_handler(
                     name,
                     send_sentry,
                     outpost,
+                    target_function_name=target_function_name,
                 )
 
         return outpost
