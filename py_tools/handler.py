@@ -58,7 +58,7 @@ class Handlers(BaseHandler):
         record = wrapper(self.record)
         m = self.module_handler(self.file, record.trigger_module, folder="dynamodb")
         functions = getattr(m, record.event_name, [])
-        
+
         # If target_function_name specified, only run that function
         if target_function_name:
             for function in functions:
@@ -78,6 +78,8 @@ class Handlers(BaseHandler):
         return m.handler(loads(self.record["body"]), self.record)
 
     def adhoc(self):
+        if "type" not in self.record:
+            return {"type": "type is missing. Please a file name in adhoc folder."}
         m = self.module_handler(self.file, self.record["type"], folder="adhoc")
         if not hasattr(m, "handler"):
             return
@@ -132,7 +134,7 @@ class OutPost:
 
     def process_failed(self, name, record, reason, function_name=None):
         entry = {"bin": name, "reason": reason}
-        
+
         # Store function name if provided (for DynamoDB granular replay)
         if function_name:
             entry["function_name"] = function_name
@@ -193,9 +195,11 @@ def _process_individual(
         handler_cls = Handlers(file, record, context, dydb_wrapper, before_request)
         wrapper = dydb_wrapper or StreamRecord
         stream_record = wrapper(record)
-        m = handler_cls.module_handler(file, stream_record.trigger_module, folder="dynamodb")
+        m = handler_cls.module_handler(
+            file, stream_record.trigger_module, folder="dynamodb"
+        )
         functions = getattr(m, stream_record.event_name, [])
-        
+
         for function in functions:
             try:
                 function(stream_record, context)
@@ -204,16 +208,16 @@ def _process_individual(
                     sentry_sdk.set_context("record", record)
                     sentry_sdk.set_context("function", function.__name__)
                     sentry_sdk.capture_exception()
-                
+
                 # Store individual function failure
                 outpost.process_failed(
-                    name, 
-                    record, 
+                    name,
+                    record,
                     traceback.format_exc(),
-                    function_name=function.__name__
+                    function_name=function.__name__,
                 )
         return
-    
+
     # Standard processing for other sources or targeted replay
     try:
         handler_cls = Handlers(file, record, context, dydb_wrapper, before_request)
@@ -235,10 +239,7 @@ def _process_individual(
             raise
 
         outpost.process_failed(
-            name, 
-            record, 
-            traceback.format_exc(),
-            function_name=target_function_name
+            name, record, traceback.format_exc(), function_name=target_function_name
         )
 
 
@@ -272,7 +273,7 @@ def aws_lambda_handler(
             for record in records:
                 # Extract target function name if present (for targeted replay)
                 target_function_name = record.pop("_target_function_name", None)
-                
+
                 _process_individual(
                     file,
                     record,
