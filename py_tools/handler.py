@@ -9,6 +9,10 @@ from py_tools.format import dumps, loads
 import tempfile
 import uuid
 from py_tools.s3 import upload_file
+from py_tools.pylog import get_logger
+
+
+logger = get_logger("py-tools.handler")
 
 
 def compress_json(json_data):
@@ -38,6 +42,7 @@ class BaseHandler:
             folder, module_name
         )
         name = path.split("/")[-1].replace(".py", "")
+        logger.debug("Loading module %s.%s from %s", folder, module_name, path)
         spec = importlib.util.spec_from_file_location(name, path)
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
@@ -52,6 +57,7 @@ class Handlers(BaseHandler):
         self.dydb_wrapper = dydb_wrapper
         if before_request:
             before_request(record, context)
+        logger.debug("Initialized handler for source %s", record.get("eventSource"))
 
     def dynamodb(self, target_function_name=None):
         wrapper = self.dydb_wrapper or StreamRecord
@@ -75,6 +81,7 @@ class Handlers(BaseHandler):
         m = self.module_handler(self.file, module_name, folder="sqs")
         if not hasattr(m, "handler"):
             return
+        logger.info("Processing SQS message for %s", module_name)
         return m.handler(loads(self.record["body"]), self.record)
 
     def adhoc(self):
@@ -83,6 +90,7 @@ class Handlers(BaseHandler):
         m = self.module_handler(self.file, self.record["type"], folder="adhoc")
         if not hasattr(m, "handler"):
             return
+        logger.info("Processing adhoc event %s", self.record["type"])
         return m.handler(self.record, self.context)
 
 
@@ -108,6 +116,9 @@ class BatchHandlers(BaseHandler):
         m = self.module_handler(self.file, module_name, folder="sqs")
 
         if not hasattr(m, "batch_handler"):
+            logger.debug(
+                "No batch_handler on %s, falling back to individual", module_name
+            )
             return False
 
         bodies = [loads(r["body"]) for r in self.records]
@@ -127,10 +138,15 @@ class BatchHandlers(BaseHandler):
 
         batch_func_name = f"batch_{stream_records[0].event_name}"
         if not hasattr(m, batch_func_name):
+            logger.debug(
+                "No batch function %s on %s, falling back to individual",
+                batch_func_name,
+                module_name,
+            )
             return False
 
         batch_func = getattr(m, batch_func_name)
-        return batch_func(stream_records, self.records)
+        return batch_func(stream_records, self.context)
 
 
 class OutPost:
@@ -166,6 +182,11 @@ class OutPost:
         else:
             entry["record"] = compress_json(record)
 
+        logger.warning(
+            "Queued replay for %s (function: %s)",
+            name,
+            function_name or "n/a",
+        )
         self.add_replays(entry)
 
 
@@ -183,6 +204,9 @@ def _process_batch(file, records, context, source_handler, name, send_sentry, ou
             return False
         if output:
             outpost.add_processed(output)
+            logger.info(
+                "Batch %s processed %d outputs", source_handler, len(outpost.processed)
+            )
         return True
     except BaseException:
         if send_sentry:
@@ -195,6 +219,7 @@ def _process_batch(file, records, context, source_handler, name, send_sentry, ou
         # Store entire batch as single replay record
         batch_event = {"Records": records}
         outpost.process_failed(name, batch_event, traceback.format_exc())
+        logger.warning("Batch %s failed; stored for replay", source_handler)
         return True
 
 
@@ -249,6 +274,7 @@ def _process_individual(
             output = method()
         if output:
             outpost.add_processed(output)
+            logger.debug("Processed individual %s event", source_handler)
     except BaseException:
         if send_sentry:
             sentry_sdk.set_context("record", record)
@@ -262,6 +288,7 @@ def _process_individual(
         outpost.process_failed(
             name, record, traceback.format_exc(), function_name=target_function_name
         )
+        logger.warning("%s record failed; queued for replay", source_handler)
 
 
 def aws_lambda_handler(
@@ -284,6 +311,8 @@ def aws_lambda_handler(
         records = event["Records"]
         source_handler = records[0]["eventSource"].split(":")[-1].lower()
 
+        logger.info("Handling %d record(s) for %s", len(records), source_handler)
+
         # batch processing
         processed_in_batch = _process_batch(
             file, records, context, source_handler, name, send_sentry, outpost
@@ -294,6 +323,11 @@ def aws_lambda_handler(
             for record in records:
                 # Extract target function name if present (for targeted replay)
                 target_function_name = record.pop("_target_function_name", None)
+
+                if target_function_name:
+                    logger.debug(
+                        "Targeted replay for function %s", target_function_name
+                    )
 
                 _process_individual(
                     file,
