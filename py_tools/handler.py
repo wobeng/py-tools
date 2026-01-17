@@ -100,10 +100,12 @@ class BatchHandlers(BaseHandler):
         file,
         records,
         context,
+        target_function_name=None,
     ):
         self.file = file
         self.records = records
         self.context = context
+        self.target_function_name = target_function_name
 
     def sqs(self):
         """Process multiple SQS records as a batch"""
@@ -136,17 +138,25 @@ class BatchHandlers(BaseHandler):
         module_name = stream_records[0].trigger_module
         m = self.module_handler(self.file, module_name, folder="dynamodb")
 
-        batch_func_name = f"batch_{stream_records[0].event_name}"
-        if not hasattr(m, batch_func_name):
+        batch_funcs = getattr(m, f"batch_{stream_records[0].event_name}", [])
+        if not batch_funcs:
             logger.debug(
-                "No batch function %s on %s, falling back to individual",
-                batch_func_name,
+                "No batch functions batch_%s on %s, falling back to individual",
+                stream_records[0].event_name,
                 module_name,
             )
             return False
 
-        batch_func = getattr(m, batch_func_name)
-        return batch_func(stream_records, self.context)
+        # If target_function_name specified, only run that function
+        if self.target_function_name:
+            for batch_func in batch_funcs:
+                if batch_func.__name__ == self.target_function_name:
+                    batch_func(stream_records, self.context)
+                    break
+        else:
+            for batch_func in batch_funcs:
+                batch_func(stream_records, self.context)
+        return True
 
 
 class OutPost:
@@ -190,9 +200,20 @@ class OutPost:
         self.add_replays(entry)
 
 
-def _process_batch(file, records, context, source_handler, name, send_sentry, outpost):
+def _process_batch(
+    file,
+    records,
+    context,
+    source_handler,
+    name,
+    send_sentry,
+    outpost,
+    target_function_name=None,
+):
     """Process records as a batch"""
-    batch_handler_cls = BatchHandlers(file, records, context)
+    batch_handler_cls = BatchHandlers(
+        file, records, context, target_function_name=target_function_name
+    )
 
     if not hasattr(batch_handler_cls, source_handler):
         return False
@@ -211,6 +232,8 @@ def _process_batch(file, records, context, source_handler, name, send_sentry, ou
     except BaseException:
         if send_sentry:
             sentry_sdk.set_context("records", dumps(batch_handler_cls.records))
+            if target_function_name:
+                sentry_sdk.set_context("function", target_function_name)
             sentry_sdk.capture_exception()
 
         if source_handler == "adhoc":
@@ -218,7 +241,12 @@ def _process_batch(file, records, context, source_handler, name, send_sentry, ou
 
         # Store entire batch as single replay record
         batch_event = {"Records": records}
-        outpost.process_failed(name, batch_event, traceback.format_exc())
+        outpost.process_failed(
+            name,
+            batch_event,
+            traceback.format_exc(),
+            function_name=target_function_name,
+        )
         logger.warning("Batch %s failed; stored for replay", source_handler)
         return True
 
@@ -313,17 +341,26 @@ def aws_lambda_handler(
 
         logger.info("Handling %d record(s) for %s", len(records), source_handler)
 
+        # Extract target function name if present (for targeted replay)
+        target_function_name = (
+            records[0].pop("_target_function_name", None) if records else None
+        )
+
         # batch processing
         processed_in_batch = _process_batch(
-            file, records, context, source_handler, name, send_sentry, outpost
+            file,
+            records,
+            context,
+            source_handler,
+            name,
+            send_sentry,
+            outpost,
+            target_function_name=target_function_name,
         )
 
         # Skip individual processing when a batch handler successfully handled the set
         if not processed_in_batch:
             for record in records:
-                # Extract target function name if present (for targeted replay)
-                target_function_name = record.pop("_target_function_name", None)
-
                 if target_function_name:
                     logger.debug(
                         "Targeted replay for function %s", target_function_name
