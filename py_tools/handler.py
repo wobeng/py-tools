@@ -108,10 +108,29 @@ class BatchHandlers(BaseHandler):
         m = self.module_handler(self.file, module_name, folder="sqs")
 
         if not hasattr(m, "batch_handler"):
-            return
+            return False
 
         bodies = [loads(r["body"]) for r in self.records]
         return m.batch_handler(bodies, self.records)
+
+    def dynamodb(self):
+        """Process multiple DynamoDB stream records as a batch.
+        Looks for batch_{event_name} in the dynamodb module. If not found,
+        return False so individual processing can handle each record.
+        """
+        if not self.records:
+            return []
+
+        stream_records = [StreamRecord(r) for r in self.records]
+        module_name = stream_records[0].trigger_module
+        m = self.module_handler(self.file, module_name, folder="dynamodb")
+
+        batch_func_name = f"batch_{stream_records[0].event_name}"
+        if not hasattr(m, batch_func_name):
+            return False
+
+        batch_func = getattr(m, batch_func_name)
+        return batch_func(stream_records, self.records)
 
 
 class OutPost:
@@ -160,6 +179,8 @@ def _process_batch(file, records, context, source_handler, name, send_sentry, ou
     try:
         method = getattr(batch_handler_cls, source_handler)
         output = method()
+        if output is False:
+            return False
         if output:
             outpost.add_processed(output)
         return True
